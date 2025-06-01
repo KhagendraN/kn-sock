@@ -411,4 +411,6 @@ Contributions are welcome! Please read the contributing guidelines first.
 
 ## License
 
+[![License](https://img.shields.io/pypi/l/kn-sock)](https://github.com/yourname/kn-sock/blob/main/LICENSE)
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -1,5 +1,8 @@
 # kn-sock
 
+![PyPI version](https://img.shields.io/pypi/v/kn-sock)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/kn-sock)](https://pypi.org/project/kn-sock/)
+
 A simplified socket programming toolkit for Python.
 
 ## Features

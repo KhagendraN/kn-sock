@@ -13,7 +13,7 @@ A simplified socket programming toolkit for Python.
 ## Installation
 
 ```bash
-pip install kn-sock==0.1.0
+pip install kn-sock
 ```
 
 ## Usage

@@ -1,7 +1,7 @@
 # examples/json_client.py
 
 import asyncio
-from easy_socket import send_json_async
+from kn_sock import send_json_async
 
 async def main():
     response = await send_json_async("localhost", 8082, {"message": "Hello, JSON Server!"})

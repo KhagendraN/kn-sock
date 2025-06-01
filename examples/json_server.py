@@ -1,7 +1,7 @@
 # examples/json_server.py
 
 import asyncio
-from easy_socket import start_json_server_async, send_json_response_async
+from kn_sock import start_json_server_async, send_json_response_async
 
 async def handle_client(data, addr, writer):
     print(f"Received JSON data from {addr}: {data}")

@@ -1,7 +1,7 @@
 # examples/udp_server.py
 
 import socket
-from easy_socket import start_udp_server
+from kn_sock import start_udp_server
 
 def handle_client(data, addr, server_socket):
     print(f"Received data from {addr}: {data.decode('utf-8')}")

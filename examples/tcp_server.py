@@ -1,7 +1,7 @@
 # examples/tcp_server.py
 
 import socket
-from easy_socket import start_tcp_server
+from kn_sock import start_tcp_server
 
 def handle_client(data, addr, client_socket):
     print(f"Received data from {addr}: {data.decode('utf-8')}")

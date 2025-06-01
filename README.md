@@ -13,6 +13,8 @@ A simplified socket programming toolkit for Python.
 - **Threaded/Multi-Client Support**: Handle multiple clients concurrently.
 - **Command-Line Interface**: Simple CLI for quick socket operations.
 
+[![GitHub Stars](https://img.shields.io/github/stars/KhagendraN/kn-sock?style=social)](https://github.com/KhagendraN/kn-sock/stargazers)
+
 ## Installation
 
 ```bash
@@ -411,6 +413,6 @@ Contributions are welcome! Please read the contributing guidelines first.
 
 ## License
 
-[![License](https://img.shields.io/pypi/l/kn-sock)](https://github.com/yourname/kn-sock/blob/main/LICENSE)
+[![License](https://img.shields.io/pypi/l/kn-sock)](https://github.com/KhagendraN/kn-sock/blob/main/LICENSE)
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

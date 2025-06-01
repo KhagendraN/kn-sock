@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="easy_socket",
-    version="0.1.0",
+    name="kn_sock",
+    version="0.2.0",
     author="Khagendra Neupane",
     author_email="nkhagendra1@gmail.com",
     description="A simplified socket programming toolkit for Python.",
@@ -17,6 +17,11 @@ setup(
     ],
     python_requires='>=3.6',
     install_requires=[
-        # List of dependencies 
+        # List of dependencies
     ],
+    entry_points={
+        'console_scripts': [
+            'easy-socket=easy_socket.cli:run_cli',
+        ],
+    },
 )

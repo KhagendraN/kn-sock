@@ -21,8 +21,8 @@ __license__ = "MIT"
 from .tcp import (
     send_tcp_message,
     start_tcp_server,
-    start_tcp_server_threaded,
-    start_tcp_server_async,
+    start_threaded_tcp_server,
+    start_async_tcp_server,
     send_tcp_message_async
 )
 
@@ -44,10 +44,12 @@ from .file_transfer import (
 
 # JSON Socket
 from .json_socket import (
-    JsonSocketServer,
-    JsonSocketClient,
-    AsyncJsonSocketServer,
-    AsyncJsonSocketClient
+    start_json_server,
+    send_json,
+    start_json_server_async,
+    send_json_async,
+    send_json_response,
+    send_json_response_async
 )
 
 # Utilities & Errors

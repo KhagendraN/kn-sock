@@ -54,7 +54,7 @@ def start_json_server(
         with client_sock:
             try:
                 while True:
-                    data_bytes = _recv_line_sync(client_sock)
+                    data_bytes = _recv_line(client_sock)
                     if not data_bytes:
                         break
                     data_str = data_bytes.decode('utf-8').strip()
@@ -79,7 +79,7 @@ def send_json(host: str, port: int, data: dict, timeout: Optional[float] = None)
         sock.sendall(message.encode('utf-8'))
 
         try:
-            response_bytes = _recv_line_sync(sock)
+            response_bytes = _recv_line(sock)
             response_str = response_bytes.decode('utf-8').strip()
             return json.loads(response_str)
         except (socket.timeout, json.JSONDecodeError):

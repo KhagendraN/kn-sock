@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="easy-socket",
+    name="easy_socket",
     version="0.1.0",
     author="Khagendra Neupane",
     author_email="nkhagendra1@gmail.com",
     description="A simplified socket programming toolkit for Python.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/khagendraneupane/easy-socket",
+    url="https://github.com/KhagendraN/easy-socket",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

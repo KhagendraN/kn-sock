@@ -1,7 +1,7 @@
-# easy_socket/__init__.py
+# kn_sock/__init__.py
 
 """
-easy_socket
+kn_sock
 -----------
 A simplified socket programming toolkit for Python.
 

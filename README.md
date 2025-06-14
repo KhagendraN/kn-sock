@@ -157,25 +157,37 @@ The `kn-sock` library comes with a simple CLI for quick socket operations. You c
 - **Send TCP Message**:
 
 ```bash
-kn-sock tcp-send localhost 8080 "Hello, World!"
+kn-sock send-tcp localhost 8080 "Hello, World!"
 ```
 
 - **Start TCP Server**:
 
 ```bash
-kn-sock tcp-server 8080
+kn-sock run-tcp-server 8080
 ```
 
 - **Send UDP Message**:
 
 ```bash
-kn-sock udp-send localhost 8080 "Hello, World!"
+kn-sock send-udp localhost 8080 "Hello, World!"
 ```
 
 - **Start UDP Server**:
 
 ```bash
-kn-sock udp-server 8080
+kn-sock run-udp-server 8080
+```
+
+- **Send File**:
+
+```bash
+kn-sock send-file localhost 8080 path/to/your/file.txt
+```
+
+- **Start File Server**:
+
+```bash
+kn-sock run-file-server 8080 /path/to/save/directory
 ```
 
 ## Decorators
@@ -406,6 +418,52 @@ try:
 except FileTransferError as e:
     print(f"FileTransferError: {e}")
 ```
+
+## Available Functions
+
+### TCP Functions
+
+- `start_tcp_server(port, handler_func, host='0.0.0.0')`
+- `start_threaded_tcp_server(port, handler_func, host='0.0.0.0')`
+- `send_tcp_message(host, port, message)`
+- `send_tcp_bytes(host, port, data)`
+- `start_async_tcp_server(port, handler_func, host='0.0.0.0')`
+- `send_tcp_message_async(host, port, message)`
+
+### UDP Functions
+
+- `start_udp_server(port, handler_func, host='0.0.0.0')`
+- `send_udp_message(host, port, message)`
+- `start_udp_server_async(port, handler_func, host='0.0.0.0')`
+- `send_udp_message_async(host, port, message)`
+
+### JSON Functions
+
+- `start_json_server(port, handler_func, host='0.0.0.0')`
+- `send_json(host, port, data)`
+
+### File Transfer Functions
+
+- `send_file(host, port, filepath)`
+- `start_file_server(port, save_dir, host='0.0.0.0')`
+- `send_file_async(host, port, filepath)`
+- `start_file_server_async(port, save_dir, host='0.0.0.0')`
+
+### Decorators
+
+- `log_exceptions(raise_error=True)`
+- `retry(retries=3, delay=1.0, exceptions=(Exception,))`
+- `measure_time(func)`
+- `ensure_json_input(func)`
+
+### Utilities
+
+- `get_free_port()`
+- `get_local_ip()`
+- `chunked_file_reader(filepath, chunk_size=4096)`
+- `recv_all(sock, total_bytes)`
+- `print_progress(received_bytes, total_bytes)`
+- `is_valid_json(json_string)`
 
 ## Contributing
 

@@ -1,0 +1,8 @@
+site_name: kn-sock
+site_url: https://kn-sock.khagendraneupane.com.np
+repo_url: https://github.com/KhagendraN/kn-sock
+nav:
+  - Home: index.md
+theme:
+  name: material  # looks better than default
+

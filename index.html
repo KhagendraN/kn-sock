@@ -222,6 +222,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -254,21 +256,14 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#kn-sock" class="md-nav__link">
-    <span class="md-ellipsis">
-      kn-sock
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#features" class="md-nav__link">
@@ -886,21 +881,14 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#kn-sock" class="md-nav__link">
-    <span class="md-ellipsis">
-      kn-sock
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#features" class="md-nav__link">
@@ -1512,9 +1500,7 @@
   
 
 
-  <h1>Home</h1>
-
-<h2 id="kn-sock">kn-sock</h2>
+<h1 id="kn-sock">kn-sock</h1>
 <p><img alt="PyPI version" src="https://img.shields.io/pypi/v/kn-sock" />
 <a href="https://pypi.org/project/kn-sock/"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/kn-sock" /></a></p>
 <p>A simplified socket programming toolkit for Python.</p>
@@ -1536,6 +1522,14 @@
 <pre><code class="language-python">from kn_sock import start_tcp_server
 
 def handle_tcp_message(data, addr, client_socket):
+    &quot;&quot;&quot;
+    Handle incoming TCP messages.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    &quot;&quot;&quot;
     print(f&quot;Received from {addr}: {data.decode('utf-8')}&quot;)
     client_socket.sendall(b&quot;Message received&quot;)
 
@@ -1551,6 +1545,14 @@ send_tcp_message(&quot;localhost&quot;, 8080, &quot;Hello, World!&quot;)
 from kn_sock import start_async_tcp_server
 
 async def handle_tcp_message(data, addr, writer):
+    &quot;&quot;&quot;
+    Handle incoming TCP messages asynchronously.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        writer (asyncio.StreamWriter): The writer object for the client.
+    &quot;&quot;&quot;
     print(f&quot;Received from {addr}: {data.decode('utf-8')}&quot;)
     writer.write(b&quot;Message received&quot;)
     await writer.drain()
@@ -1568,6 +1570,14 @@ asyncio.run(send_tcp_message_async(&quot;localhost&quot;, 8080, &quot;Hello, Wor
 <pre><code class="language-python">from kn_sock import start_udp_server
 
 def handle_udp_message(data, addr, server_socket):
+    &quot;&quot;&quot;
+    Handle incoming UDP messages.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        server_socket (socket.socket): The server socket.
+    &quot;&quot;&quot;
     print(f&quot;Received from {addr}: {data.decode('utf-8')}&quot;)
 
 start_udp_server(8080, handle_udp_message)
@@ -1582,6 +1592,14 @@ send_udp_message(&quot;localhost&quot;, 8080, &quot;Hello, World!&quot;)
 from kn_sock import start_udp_server_async
 
 async def handle_udp_message(data, addr, transport):
+    &quot;&quot;&quot;
+    Handle incoming UDP messages asynchronously.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        transport (asyncio.DatagramTransport): The transport object for the client.
+    &quot;&quot;&quot;
     print(f&quot;Received from {addr}: {data.decode('utf-8')}&quot;)
 
 asyncio.run(start_udp_server_async(8080, handle_udp_message))
@@ -1597,6 +1615,14 @@ asyncio.run(send_udp_message_async(&quot;localhost&quot;, 8080, &quot;Hello, Wor
 <pre><code class="language-python">from kn_sock import start_json_server
 
 def handle_json_message(data, addr, client_socket):
+    &quot;&quot;&quot;
+    Handle incoming JSON messages.
+
+    Args:
+        data (dict): The JSON data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    &quot;&quot;&quot;
     print(f&quot;Received from {addr}: {data}&quot;)
     client_socket.sendall(b'{&quot;status&quot;: &quot;received&quot;}')
 
@@ -1658,6 +1684,14 @@ send_file(&quot;localhost&quot;, 8080, &quot;path/to/your/file.txt&quot;)
 
 @log_exceptions(raise_error=True)
 def handle_message(data, addr, client_socket):
+    &quot;&quot;&quot;
+    Handle incoming messages with exception logging.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    &quot;&quot;&quot;
     # Your message handling code here
     pass
 </code></pre>
@@ -1667,6 +1701,14 @@ def handle_message(data, addr, client_socket):
 
 @retry(retries=3, delay=1.0, exceptions=(Exception,))
 def handle_message(data, addr, client_socket):
+    &quot;&quot;&quot;
+    Handle incoming messages with retry logic.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    &quot;&quot;&quot;
     # Your message handling code here
     pass
 </code></pre>
@@ -1676,6 +1718,14 @@ def handle_message(data, addr, client_socket):
 
 @measure_time
 def handle_message(data, addr, client_socket):
+    &quot;&quot;&quot;
+    Handle incoming messages with execution time measurement.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    &quot;&quot;&quot;
     # Your message handling code here
     pass
 </code></pre>
@@ -1685,6 +1735,14 @@ def handle_message(data, addr, client_socket):
 
 @ensure_json_input
 def handle_json_message(data, addr, client_socket):
+    &quot;&quot;&quot;
+    Handle incoming JSON messages with input validation.
+
+    Args:
+        data (dict): The JSON data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    &quot;&quot;&quot;
     # Your JSON message handling code here
     pass
 </code></pre>
@@ -1848,7 +1906,7 @@ except FileTransferError as e:
 <li><code>is_valid_json(json_string)</code></li>
 </ul>
 <h2 id="contributing">Contributing</h2>
-<p>Contributions are welcome! Please read the contributing guidelines first.</p>
+<p>Contributions are welcome! Please read the contributing <a href="(https://github.com/KhagendraN/kn-sock/blob/main/CONTRIBUTING.md)">guidelines</a> first.</p>
 <h2 id="license">License</h2>
 <p><a href="https://github.com/KhagendraN/kn-sock/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/pypi/l/kn-sock" /></a></p>
 <p>This project is licensed under the MIT License - see the <a href="https://github.com/KhagendraN/kn-sock/blob/main/LICENSE">LICENSE</a>

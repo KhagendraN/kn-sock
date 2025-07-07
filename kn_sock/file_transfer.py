@@ -1,4 +1,4 @@
-# easy_socket/file_transfer.py
+# kn_sock/file_transfer.py
 
 import os
 import socket

@@ -1,4 +1,4 @@
-# easy_socket/json_socket.py
+# kn_sock/json_socket.py
 
 import socket
 import threading

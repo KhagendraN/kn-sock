@@ -1,11 +1,11 @@
-# easy_socket/decorators.py
+# kn_sock/decorators.py
 
 import time
 import json
 import functools
 import traceback
 from typing import Callable, Any, Optional, Type
-from easy_socket.errors import InvalidJSONError
+from kn_sock.errors import InvalidJSONError
 
 
 # -----------------------------

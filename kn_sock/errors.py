@@ -1,4 +1,4 @@
-# easy_socket/errors.py
+# kn_sock/errors.py
 
 class EasySocketError(Exception):
     """Base exception for all easy_socket errors."""

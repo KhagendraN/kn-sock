@@ -1,4 +1,4 @@
-# easy_socket/tcp.py
+# kn_sock/tcp.py
 
 import socket
 import threading

@@ -1,4 +1,4 @@
-# easy_socket/udp.py
+# kn_sock/udp.py
 
 import socket
 import asyncio

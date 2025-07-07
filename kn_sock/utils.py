@@ -1,4 +1,4 @@
-# easy_socket/utils.py
+# kn_sock/utils.py
 
 import os
 import socket

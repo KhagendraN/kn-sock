@@ -1,1 +1,6 @@
 # No external dependencies required for this project
+
+opencv-python
+numpy
+pyaudio
+ffmpeg-python

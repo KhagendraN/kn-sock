@@ -7,6 +7,7 @@ from kn_sock import (
     start_udp_server, send_udp_message,
     start_udp_server_async, send_udp_message_async,
 )
+from kn_sock.utils import get_free_port
 
 # --- Sync TCP ---
 
@@ -18,16 +19,26 @@ def run_sync_tcp_server():
         received_messages.append(data.decode())
         client_socket.sendall(b"Message received")
 
-    server_thread = threading.Thread(target=start_tcp_server, args=(9090, handler), daemon=True)
+    port = get_free_port()
+    server_thread = threading.Thread(target=start_tcp_server, args=(port, handler), daemon=True)
     server_thread.start()
 
-    import time; time.sleep(0.5)
-    yield received_messages
+    import time; time.sleep(1)
+    yield received_messages, port
 
 def test_sync_tcp(run_sync_tcp_server):
-    send_tcp_message("localhost", 9090, "Hello, Sync TCP!")
-    import time; time.sleep(0.5)
-    assert "Hello, Sync TCP!" in run_sync_tcp_server, (
+    import time
+    received_messages, port = run_sync_tcp_server
+    for _ in range(10):
+        try:
+            send_tcp_message("localhost", port, "Hello, Sync TCP!")
+            break
+        except ConnectionRefusedError:
+            time.sleep(0.2)
+    else:
+        pytest.fail("TCP server did not start in time")
+    time.sleep(0.5)
+    assert "Hello, Sync TCP!" in received_messages, (
         "FAILURE: Sync TCP server did NOT receive the expected message."
     )
     print("SUCCESS: Sync TCP server received the expected message.")
@@ -90,17 +101,18 @@ def test_sync_udp(run_sync_udp_server):
 
 @pytest.mark.asyncio
 async def test_async_udp():
+    port = get_free_port()
     received_messages = []
 
     async def handler(data, addr, transport):
         received_messages.append(data.decode())
 
-    server_task = asyncio.create_task(start_udp_server_async(9093, handler))
-    await asyncio.sleep(1)  # wait for server to start
+    server_task = asyncio.create_task(start_udp_server_async(port, handler))
+    await asyncio.sleep(2)
 
-    await send_udp_message_async("localhost", 9093, "Hello, Async UDP!")
+    await send_udp_message_async("localhost", port, "Hello, Async UDP!")
 
-    await asyncio.sleep(1)  # wait for message handling
+    await asyncio.sleep(2)
 
     server_task.cancel()
     try:

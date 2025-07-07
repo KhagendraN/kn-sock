@@ -77,13 +77,9 @@ def test_handle_json_message_and_server():
     )
     assert 'addr' in received_data, "Server handler did not capture client address."
 
-    try:
-        response_json = json.loads(response.decode())
-    except Exception as e:
-        pytest.fail(f"Response is not valid JSON: {e}")
-
-    assert response_json == {"status": "received"}, (
-        f"Unexpected response from server: expected {{'status': 'received'}}, got {response_json}"
+    assert isinstance(response, dict), f"Response is not a dict: {response}"
+    assert response == {"status": "received"}, (
+        f"Unexpected response from server: expected {{'status': 'received'}}, got {response}"
     )
 
     print("[TEST PASSED] JSON server received and responded correctly.")

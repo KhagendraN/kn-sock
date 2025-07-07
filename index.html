@@ -467,6 +467,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#live-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Streaming
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Live Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#live-stream-server-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Stream Server (Python)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-stream-client-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Stream Client (Python)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-streaming-via-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Streaming via CLI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command-line-interface" class="md-nav__link">
     <span class="md-ellipsis">
       Command-Line Interface
@@ -828,6 +870,15 @@
   <a href="#utilities_1" class="md-nav__link">
     <span class="md-ellipsis">
       Utilities
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-streaming-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Streaming Functions
     </span>
   </a>
   
@@ -1092,6 +1143,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#live-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Streaming
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Live Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#live-stream-server-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Stream Server (Python)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-stream-client-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Stream Client (Python)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-streaming-via-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Streaming via CLI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command-line-interface" class="md-nav__link">
     <span class="md-ellipsis">
       Command-Line Interface
@@ -1458,6 +1551,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#live-streaming-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Live Streaming Functions
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1643,6 +1745,36 @@ start_file_server(8080)
 <pre><code class="language-python">from kn_sock import send_file
 
 send_file(&quot;localhost&quot;, 8080, &quot;path/to/your/file.txt&quot;)
+</code></pre>
+<h2 id="live-streaming">Live Streaming</h2>
+<p>The <code>kn_sock</code> library supports live video and audio streaming from a video file to multiple clients, using both Python API and CLI.</p>
+<blockquote>
+<p><strong>Note:</strong> For best compatibility, use video files encoded as mp4 (H.264). Some formats (e.g., AV1) may not be supported by your OpenCV/FFmpeg installation.</p>
+</blockquote>
+<h3 id="live-stream-server-python">Live Stream Server (Python)</h3>
+<pre><code class="language-python">from kn_sock import start_live_stream
+
+# Start a live stream server on port 9000, streaming from a video file
+start_live_stream(9000, &quot;/path/to/video.mp4&quot;)
+</code></pre>
+<h3 id="live-stream-client-python">Live Stream Client (Python)</h3>
+<pre><code class="language-python">from kn_sock import connect_to_live_server
+
+# Connect to a live stream server at 192.168.1.10:9000
+connect_to_live_server(&quot;192.168.1.10&quot;, 9000)
+</code></pre>
+<h3 id="live-streaming-via-cli">Live Streaming via CLI</h3>
+<ul>
+<li><strong>Start a live stream server:</strong></li>
+</ul>
+<pre><code class="language-bash">kn-sock run-live-server 9000 /path/to/video.mp4
+# Optional: --host 0.0.0.0 --audio-port 9001
+</code></pre>
+<ul>
+<li><strong>Connect as a live stream client:</strong></li>
+</ul>
+<pre><code class="language-bash">kn-sock connect-live-server 192.168.1.10 9000
+# Optional: --audio-port 9001
 </code></pre>
 <h2 id="command-line-interface">Command-Line Interface</h2>
 <p>The <code>kn-sock</code> library comes with a simple CLI for quick socket operations. You can use the following commands:</p>
@@ -1904,6 +2036,11 @@ except FileTransferError as e:
 <li><code>recv_all(sock, total_bytes)</code></li>
 <li><code>print_progress(received_bytes, total_bytes)</code></li>
 <li><code>is_valid_json(json_string)</code></li>
+</ul>
+<h3 id="live-streaming-functions">Live Streaming Functions</h3>
+<ul>
+<li><code>start_live_stream(port, video_path, host='0.0.0.0', audio_port=None)</code></li>
+<li><code>connect_to_live_server(ip, port, audio_port=None)</code></li>
 </ul>
 <h2 id="contributing">Contributing</h2>
 <p>Contributions are welcome! Please read the contributing <a href="(https://github.com/KhagendraN/kn-sock/blob/main/CONTRIBUTING.md)">guidelines</a> first.</p>

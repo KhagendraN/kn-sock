@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="kn-sock",
-    version="0.2.1",
+    version="0.2.3",
     packages=find_packages(),
     entry_points={
         'console_scripts': [
@@ -10,7 +10,10 @@ setup(
         ],
     },
     install_requires=[
-        # No any dependencies 
+        "opencv-python",
+        "numpy",
+        "pyaudio",
+        "ffmpeg-python"
     ],
     author="Khagendra Neupane",
     author_email="nkhagendra1@gmail.com",

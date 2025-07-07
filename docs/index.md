@@ -1,4 +1,4 @@
-## kn-sock
+# kn-sock
 
 ![PyPI version](https://img.shields.io/pypi/v/kn-sock)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/kn-sock)](https://pypi.org/project/kn-sock/)
@@ -31,6 +31,14 @@ pip install kn-sock
 from kn_sock import start_tcp_server
 
 def handle_tcp_message(data, addr, client_socket):
+    """
+    Handle incoming TCP messages.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    """
     print(f"Received from {addr}: {data.decode('utf-8')}")
     client_socket.sendall(b"Message received")
 
@@ -52,6 +60,14 @@ import asyncio
 from kn_sock import start_async_tcp_server
 
 async def handle_tcp_message(data, addr, writer):
+    """
+    Handle incoming TCP messages asynchronously.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        writer (asyncio.StreamWriter): The writer object for the client.
+    """
     print(f"Received from {addr}: {data.decode('utf-8')}")
     writer.write(b"Message received")
     await writer.drain()
@@ -76,6 +92,14 @@ asyncio.run(send_tcp_message_async("localhost", 8080, "Hello, World!"))
 from kn_sock import start_udp_server
 
 def handle_udp_message(data, addr, server_socket):
+    """
+    Handle incoming UDP messages.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        server_socket (socket.socket): The server socket.
+    """
     print(f"Received from {addr}: {data.decode('utf-8')}")
 
 start_udp_server(8080, handle_udp_message)
@@ -96,6 +120,14 @@ import asyncio
 from kn_sock import start_udp_server_async
 
 async def handle_udp_message(data, addr, transport):
+    """
+    Handle incoming UDP messages asynchronously.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        transport (asyncio.DatagramTransport): The transport object for the client.
+    """
     print(f"Received from {addr}: {data.decode('utf-8')}")
 
 asyncio.run(start_udp_server_async(8080, handle_udp_message))
@@ -118,6 +150,14 @@ asyncio.run(send_udp_message_async("localhost", 8080, "Hello, World!"))
 from kn_sock import start_json_server
 
 def handle_json_message(data, addr, client_socket):
+    """
+    Handle incoming JSON messages.
+
+    Args:
+        data (dict): The JSON data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    """
     print(f"Received from {addr}: {data}")
     client_socket.sendall(b'{"status": "received"}')
 
@@ -148,6 +188,46 @@ start_file_server(8080)
 from kn_sock import send_file
 
 send_file("localhost", 8080, "path/to/your/file.txt")
+```
+
+## Live Streaming
+
+The `kn_sock` library supports live video and audio streaming from a video file to multiple clients, using both Python API and CLI.
+
+> **Note:** For best compatibility, use video files encoded as mp4 (H.264). Some formats (e.g., AV1) may not be supported by your OpenCV/FFmpeg installation.
+
+### Live Stream Server (Python)
+
+```python
+from kn_sock import start_live_stream
+
+# Start a live stream server on port 9000, streaming from a video file
+start_live_stream(9000, "/path/to/video.mp4")
+```
+
+### Live Stream Client (Python)
+
+```python
+from kn_sock import connect_to_live_server
+
+# Connect to a live stream server at 192.168.1.10:9000
+connect_to_live_server("192.168.1.10", 9000)
+```
+
+### Live Streaming via CLI
+
+- **Start a live stream server:**
+
+```bash
+kn-sock run-live-server 9000 /path/to/video.mp4
+# Optional: --host 0.0.0.0 --audio-port 9001
+```
+
+- **Connect as a live stream client:**
+
+```bash
+kn-sock connect-live-server 192.168.1.10 9000
+# Optional: --audio-port 9001
 ```
 
 ## Command-Line Interface
@@ -203,6 +283,14 @@ from kn_sock.decorators import log_exceptions
 
 @log_exceptions(raise_error=True)
 def handle_message(data, addr, client_socket):
+    """
+    Handle incoming messages with exception logging.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    """
     # Your message handling code here
     pass
 ```
@@ -216,6 +304,14 @@ from kn_sock.decorators import retry
 
 @retry(retries=3, delay=1.0, exceptions=(Exception,))
 def handle_message(data, addr, client_socket):
+    """
+    Handle incoming messages with retry logic.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    """
     # Your message handling code here
     pass
 ```
@@ -229,6 +325,14 @@ from kn_sock.decorators import measure_time
 
 @measure_time
 def handle_message(data, addr, client_socket):
+    """
+    Handle incoming messages with execution time measurement.
+
+    Args:
+        data (bytes): The data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    """
     # Your message handling code here
     pass
 ```
@@ -242,6 +346,14 @@ from kn_sock.decorators import ensure_json_input
 
 @ensure_json_input
 def handle_json_message(data, addr, client_socket):
+    """
+    Handle incoming JSON messages with input validation.
+
+    Args:
+        data (dict): The JSON data received from the client.
+        addr (tuple): The address of the client.
+        client_socket (socket.socket): The client socket.
+    """
     # Your JSON message handling code here
     pass
 ```
@@ -465,9 +577,14 @@ except FileTransferError as e:
 - `print_progress(received_bytes, total_bytes)`
 - `is_valid_json(json_string)`
 
+### Live Streaming Functions
+
+- `start_live_stream(port, video_path, host='0.0.0.0', audio_port=None)`
+- `connect_to_live_server(ip, port, audio_port=None)`
+
 ## Contributing
 
-Contributions are welcome! Please read the contributing guidelines first.
+Contributions are welcome! Please read the contributing [guidelines]((https://github.com/KhagendraN/kn-sock/blob/main/CONTRIBUTING.md)) first.
 
 ## License
 

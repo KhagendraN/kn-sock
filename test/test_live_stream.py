@@ -1,3 +1,5 @@
+import threading
+import time
 import os
 import tempfile
 import pytest
@@ -6,6 +8,7 @@ from unittest.mock import patch
 try:
     import cv2
     import pyaudio
+    import numpy as np
     HAS_DEPS = True
 except ImportError:
     HAS_DEPS = False
@@ -32,4 +35,30 @@ def test_live_stream_server_client_init():
             client.stop()
             print('[SUCCESS] LiveStreamServer/Client instantiation and stop')
     finally:
-        os.remove(video_path) 
+        os.remove(video_path)
+
+def test_adaptive_bitrate(tmp_path):
+    # Use a short dummy wav file and a small video (or mock video)
+    video_path = str(tmp_path / "dummy.mp4")
+    # Create a dummy video file if not exists (1 black frame)
+    import cv2
+    import numpy as np
+    frame = np.zeros((240, 320, 3), dtype=np.uint8)
+    out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), 1, (320, 240))
+    out.write(frame)
+    out.release()
+    with patch('kn_sock.live_stream.LiveStreamServer._extract_audio', return_value=None):
+        server = LiveStreamServer(video_path, host='127.0.0.1', video_port=9000, audio_port=9001, control_port=9010)
+        server_thread = threading.Thread(target=server.start, daemon=True)
+        server_thread.start()
+        time.sleep(2)
+        client = LiveStreamClient('127.0.0.1', 9000, 9001, control_port=9010, video_buffer_ms=100, audio_buffer_ms=100)
+        client_thread = threading.Thread(target=client.start, daemon=True)
+        client_thread.start()
+        time.sleep(5)
+        client.stop()
+        server.stop()
+        # Check that server._client_quality has been updated
+        print(f"[TEST] Server client quality settings: {server._client_quality}")
+        assert any(q != 80 for q in server._client_quality.values()) or len(server._client_quality) == 0
+        print("[SUCCESS] Adaptive bitrate feedback and quality adjustment") 

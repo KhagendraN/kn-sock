@@ -84,6 +84,122 @@ from kn_sock import send_tcp_message_async
 asyncio.run(send_tcp_message_async("localhost", 8080, "Hello, World!"))
 ```
 
+## Secure TCP (SSL/TLS)
+
+`kn_sock` supports secure TCP communication using SSL/TLS, both in code and via the CLI.
+
+### Synchronous Secure TCP Server
+
+```python
+from kn_sock import start_ssl_tcp_server
+
+def handle_secure(data, addr, client_socket):
+    print(f"Received from {addr}: {data.decode()}")
+    client_socket.sendall(b"Secure response")
+
+start_ssl_tcp_server(
+    8443,
+    handle_secure,
+    certfile="server.crt",
+    keyfile="server.key",
+    cafile="ca.crt",  # Optional, for client cert verification
+    require_client_cert=True  # For mutual TLS
+)
+```
+
+### Synchronous Secure TCP Client
+
+```python
+from kn_sock import send_ssl_tcp_message
+
+send_ssl_tcp_message(
+    "localhost", 8443, "Hello Secure",
+    cafile="ca.crt",  # Optional, for server verification
+    certfile="client.crt", keyfile="client.key"  # For mutual TLS
+)
+```
+
+### Asynchronous Secure TCP Server
+
+```python
+import asyncio
+from kn_sock import start_async_ssl_tcp_server
+
+async def handle_secure(data, addr, writer):
+    print(f"Received from {addr}: {data.decode()}")
+    writer.write(b"Secure response")
+    await writer.drain()
+
+asyncio.run(start_async_ssl_tcp_server(
+    8443,
+    handle_secure,
+    certfile="server.crt",
+    keyfile="server.key"
+))
+```
+
+### Asynchronous Secure TCP Client
+
+```python
+import asyncio
+from kn_sock import send_ssl_tcp_message_async
+
+asyncio.run(send_ssl_tcp_message_async(
+    "localhost", 8443, "Hello Secure"
+))
+```
+
+### CLI Usage
+
+```bash
+# Start a secure server
+kn-sock run-ssl-tcp-server 8443 server.crt server.key --cafile ca.crt --require-client-cert
+
+# Send a secure message
+kn-sock send-ssl-tcp localhost 8443 "Hello Secure" --cafile ca.crt --certfile client.crt --keyfile client.key
+```
+
+> **Note:** You must have valid certificate and key files. For testing, you can generate self-signed certificates using OpenSSL.
+
+## TCP Connection Pooling
+
+`kn_sock` provides a TCPConnectionPool for efficient client-side connection reuse. This reduces connection overhead for frequent requests.
+
+### Basic Usage (Plain TCP)
+
+```python
+from kn_sock import TCPConnectionPool
+
+pool = TCPConnectionPool('localhost', 8080, max_size=5, idle_timeout=30)
+with pool.connection() as conn:
+    conn.sendall(b"Hello")
+    data = conn.recv(1024)
+    print(data)
+
+pool.closeall()  # Clean up all connections
+```
+
+### Secure Usage (SSL/TLS)
+
+```python
+from kn_sock import TCPConnectionPool
+
+pool = TCPConnectionPool(
+    'localhost', 8443, max_size=5, idle_timeout=30,
+    ssl=True, cafile="ca.crt", certfile="client.crt", keyfile="client.key", verify=True
+)
+with pool.connection() as conn:
+    conn.sendall(b"Hello Secure")
+    data = conn.recv(1024)
+    print(data)
+
+pool.closeall()
+```
+
+- `max_size`: Maximum number of pooled connections.
+- `idle_timeout`: Seconds before idle connections are closed.
+- `ssl`, `cafile`, `certfile`, `keyfile`, `verify`: SSL/TLS options.
+
 ### UDP Messaging
 
 #### Synchronous UDP Server
@@ -229,6 +345,218 @@ kn-sock run-live-server 9000 /path/to/video.mp4
 kn-sock connect-live-server 192.168.1.10 9000
 # Optional: --audio-port 9001
 ```
+
+## WebSocket Support
+
+kn_sock provides a minimal WebSocket server and client for real-time, bidirectional communication (e.g., chat, dashboards, live updates).
+
+- Use `start_websocket_server(host, port, handler_func, ...)` to start a WebSocket server.
+- Use `connect_websocket(host, port, ...)` to connect as a client.
+
+### Example: WebSocket Echo Server
+
+```python
+from kn_sock import start_websocket_server
+import threading
+
+def echo_handler(ws):
+    print(f"[WebSocket][SERVER] Client connected: {ws.addr}")
+    try:
+        while ws.open:
+            msg = ws.recv()
+            if not msg:
+                break
+            ws.send(f"Echo: {msg}")
+    finally:
+        ws.close()
+
+shutdown_event = threading.Event()
+server_thread = threading.Thread(
+    target=start_websocket_server,
+    args=("127.0.0.1", 8765, echo_handler),
+    kwargs={"shutdown_event": shutdown_event},
+    daemon=True
+)
+server_thread.start()
+# ... trigger shutdown_event as needed ...
+```
+
+### Example: WebSocket Client
+
+```python
+from kn_sock import connect_websocket
+ws = connect_websocket("127.0.0.1", 8765)
+ws.send("Hello WebSocket!")
+reply = ws.recv()
+print(f"Received: {reply}")
+ws.close()
+```
+
+> **Note:** This implementation supports text frames only (no binary, no extensions, no SSL for browsers yet). Suitable for Python-to-Python or custom client/server use.
+
+## HTTP/HTTPS Client Support
+
+kn_sock provides simple HTTP and HTTPS client helpers for quick requests without external libraries.
+
+- `http_get(host, port=80, path='/', headers=None)`
+- `http_post(host, port=80, path='/', data='', headers=None)`
+- `https_get(host, port=443, path='/', headers=None, cafile=None)`
+- `https_post(host, port=443, path='/', data='', headers=None, cafile=None)`
+
+### Example: HTTP GET/POST
+
+```python
+from kn_sock import http_get, http_post
+
+body = http_get("example.com", 80, "/")
+print(body)
+
+body = http_post("httpbin.org", 80, "/post", data="foo=bar&baz=qux")
+print(body)
+```
+
+### Example: HTTPS GET/POST
+
+```python
+from kn_sock import https_get, https_post
+
+body = https_get("example.com", 443, "/")
+print(body)
+
+body = https_post("httpbin.org", 443, "/post", data="foo=bar&baz=qux")
+print(body)
+```
+
+> **Note:** These helpers do not support redirects, chunked encoding, or cookies. For advanced HTTP features, use a full HTTP library.
+
+## HTTP Server
+
+kn_sock provides a minimal HTTP server for serving static files and handling simple API routes.
+
+- Use `start_http_server(host, port, static_dir=None, routes=None, shutdown_event=None)` to start the server.
+- `static_dir`: Directory to serve files from (e.g., index.html).
+- `routes`: Dict mapping (method, path) to handler functions. Handler signature: (request, client_socket).
+- `shutdown_event`: For graceful shutdown.
+
+### Example: Static File and Route Handlers
+
+```python
+from kn_sock import start_http_server
+import threading
+import os
+
+def hello_route(request, client_sock):
+    client_sock.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nHello")
+
+def echo_post(request, client_sock):
+    body = request['raw'].split(b'\r\n\r\n', 1)[-1]
+    resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body
+    client_sock.sendall(resp)
+
+os.makedirs("static", exist_ok=True)
+with open("static/index.html", "w") as f:
+    f.write("<h1>Hello from static file!</h1>")
+routes = {
+    ("GET", "/hello"): hello_route,
+    ("POST", "/echo"): echo_post,
+}
+shutdown_event = threading.Event()
+server_thread = threading.Thread(
+    target=start_http_server,
+    args=("127.0.0.1", 8080),
+    kwargs={"static_dir": "static", "routes": routes, "shutdown_event": shutdown_event},
+    daemon=True
+)
+server_thread.start()
+# ... trigger shutdown_event as needed ...
+```
+
+> **Note:** This server is for prototyping and simple use cases. For production, use a full-featured HTTP server.
+
+## Publish/Subscribe (Pub/Sub)
+
+kn_sock provides a simple TCP-based pub/sub server and client for topic-based messaging.
+
+- Use `start_pubsub_server(port, handler_func=None, host='0.0.0.0', shutdown_event=None)` to start the server.
+- Use `PubSubClient(host, port)` for the client. Methods: `subscribe(topic)`, `unsubscribe(topic)`, `publish(topic, message)`, `recv(timeout=None)`.
+
+### Example: Pub/Sub Server
+
+```python
+from kn_sock import start_pubsub_server
+import threading
+
+shutdown_event = threading.Event()
+server_thread = threading.Thread(
+    target=start_pubsub_server,
+    args=(9000,),
+    kwargs={"shutdown_event": shutdown_event},
+    daemon=True
+)
+server_thread.start()
+# ... trigger shutdown_event as needed ...
+```
+
+### Example: Pub/Sub Client
+
+```python
+from kn_sock import PubSubClient
+client = PubSubClient("127.0.0.1", 9000)
+client.subscribe("news")
+client.publish("news", "Hello, subscribers!")
+msg = client.recv(timeout=2)
+print(msg)
+client.close()
+```
+
+> **Protocol:** All messages are JSON lines. Actions: `subscribe`, `unsubscribe`, `publish`. Server broadcasts published messages to all subscribers of a topic.
+
+> **Use cases:** Chat rooms, notifications, real-time data updates, event-driven apps.
+
+## Remote Procedure Call (RPC)
+
+kn_sock provides a simple TCP-based JSON-RPC server and client for remote function calls.
+
+- Use `start_rpc_server(port, register_funcs, host='0.0.0.0', shutdown_event=None)` to start the server.
+- Use `RPCClient(host, port)` for the client. Method: `call(function, *args, **kwargs)`.
+
+### Example: RPC Server
+
+```python
+from kn_sock import start_rpc_server
+import threading
+
+def add(a, b):
+    return a + b
+
+def echo(msg):
+    return msg
+
+funcs = {"add": add, "echo": echo}
+shutdown_event = threading.Event()
+server_thread = threading.Thread(
+    target=start_rpc_server,
+    args=(9001, funcs),
+    kwargs={"shutdown_event": shutdown_event},
+    daemon=True
+)
+server_thread.start()
+# ... trigger shutdown_event as needed ...
+```
+
+### Example: RPC Client
+
+```python
+from kn_sock import RPCClient
+client = RPCClient("127.0.0.1", 9001)
+print(client.call("add", 2, 3))
+print(client.call("echo", msg="Hello!"))
+client.close()
+```
+
+> **Protocol:** All requests and responses are JSON lines. Requests: `{method, params, kwargs}`. Responses: `{result}` or `{error}`.
+
+> **Use cases:** Distributed computing, remote control, microservices, automation.
 
 ## Command-Line Interface
 
@@ -533,62 +861,29 @@ except FileTransferError as e:
 
 ## Available Functions
 
+> **Note:** All server functions (TCP, UDP, SSL, async/sync) accept a `shutdown_event` parameter for graceful shutdown. Use `threading.Event` for sync servers and `asyncio.Event` for async servers.
+
 ### TCP Functions
 
-- `start_tcp_server(port, handler_func, host='0.0.0.0')`
-- `start_threaded_tcp_server(port, handler_func, host='0.0.0.0')`
+- `start_tcp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)`
+- `start_threaded_tcp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)`
 - `send_tcp_message(host, port, message)`
 - `send_tcp_bytes(host, port, data)`
-- `start_async_tcp_server(port, handler_func, host='0.0.0.0')`
+- `start_async_tcp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)`
 - `send_tcp_message_async(host, port, message)`
+- `start_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, require_client_cert=False, host='0.0.0.0', shutdown_event=None)`
+- `send_ssl_tcp_message(host, port, message, cafile=None, certfile=None, keyfile=None, verify=True)`
+- `start_async_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, require_client_cert=False, host='0.0.0.0', shutdown_event=None)`
+- `send_ssl_tcp_message_async(host, port, message, cafile=None, certfile=None, keyfile=None, verify=True)`
 
 ### UDP Functions
 
-- `start_udp_server(port, handler_func, host='0.0.0.0')`
+- `start_udp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)`
 - `send_udp_message(host, port, message)`
-- `start_udp_server_async(port, handler_func, host='0.0.0.0')`
+- `start_udp_server_async(port, handler_func, host='0.0.0.0', shutdown_event=None)`
 - `send_udp_message_async(host, port, message)`
 
 ### JSON Functions
 
 - `start_json_server(port, handler_func, host='0.0.0.0')`
-- `send_json(host, port, data)`
-
-### File Transfer Functions
-
-- `send_file(host, port, filepath)`
-- `start_file_server(port, save_dir, host='0.0.0.0')`
-- `send_file_async(host, port, filepath)`
-- `start_file_server_async(port, save_dir, host='0.0.0.0')`
-
-### Decorators
-
-- `log_exceptions(raise_error=True)`
-- `retry(retries=3, delay=1.0, exceptions=(Exception,))`
-- `measure_time(func)`
-- `ensure_json_input(func)`
-
-### Utilities
-
-- `get_free_port()`
-- `get_local_ip()`
-- `chunked_file_reader(filepath, chunk_size=4096)`
-- `recv_all(sock, total_bytes)`
-- `print_progress(received_bytes, total_bytes)`
-- `is_valid_json(json_string)`
-
-### Live Streaming Functions
-
-- `start_live_stream(port, video_path, host='0.0.0.0', audio_port=None)`
-- `connect_to_live_server(ip, port, audio_port=None)`
-
-## Contributing
-
-Contributions are welcome! Please read the contributing [guidelines]((https://github.com/KhagendraN/kn-sock/blob/main/CONTRIBUTING.md)) first.
-
-## License
-
-[![License](https://img.shields.io/pypi/l/kn-sock)](https://github.com/KhagendraN/kn-sock/blob/main/LICENSE)
-
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/KhagendraN/kn-sock/blob/main/LICENSE)
- file for details.
+- `

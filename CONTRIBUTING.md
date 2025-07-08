@@ -52,7 +52,7 @@ Describe your changes clearly so reviewers understand the context.
 Make sure all tests pass before submitting:
 
 ```bash
-python -m unittest discover tests/
+pytest -s test/*
 ```
 
 ---

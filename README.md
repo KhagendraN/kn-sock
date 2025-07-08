@@ -22,11 +22,13 @@ A simplified socket programming toolkit for Python.
 
 ## 💡 Use Cases
 
-- Build custom TCP/UDP servers quickly
-- Transfer files between machines
-- Send structured (JSON) data across a network
-- Create automated socket tests
-- Use CLI for local or remote debugging
+- Build custom TCP/UDP servers quickly  
+- Transfer files between machines  
+- Send structured (JSON) data across a network  
+- Stream live video and audio to multiple clients (via Python or CLI)  
+- Share or execute code snippets over a network  
+- Create automated socket-based test environments  
+- Use CLI for local or remote debugging and diagnostics  
 
 ---
 

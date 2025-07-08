@@ -1,23 +1,24 @@
-import argparse
 import sys
-from kn_sock import connect_to_live_server
-import os
-
-# Dynamically import connect_to_live_server from kn_sock/live_stream.py
-#spec = importlib.util.spec_from_file_location(
-#    "live_stream", os.path.join(os.path.dirname(__file__), "..", "kn_sock", "live_stream.py")
-#)
-#live_stream = importlib.util.module_from_spec(spec)
-#sys.modules["live_stream"] = live_stream
-#spec.loader.exec_module(live_stream)
-#connect_to_live_server = live_stream.connect_to_live_server
+import time
+from kn_sock.live_stream import LiveStreamClient
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Connect to a live video/audio stream server using kn_sock.")
-    parser.add_argument("ip", type=str, help="Server IP address")
-    parser.add_argument("port", type=int, help="Video port (audio will use port+1 by default)")
-    parser.add_argument("--audio-port", type=int, default=None, help="Audio port (default: port+1)")
-    args = parser.parse_args()
-
-    print(f"[examples/client_live.py] Connecting to live stream at {args.ip}:{args.port} (audio: {args.audio_port or args.port+1})")
-    connect_to_live_server(args.ip, args.port, audio_port=args.audio_port) 
+    if len(sys.argv) < 2:
+        print("Usage: python client_live.py <host> [video_port] [audio_port] [control_port]")
+        sys.exit(1)
+    host = sys.argv[1]
+    video_port = int(sys.argv[2]) if len(sys.argv) > 2 else 8000
+    audio_port = int(sys.argv[3]) if len(sys.argv) > 3 else 8001
+    control_port = int(sys.argv[4]) if len(sys.argv) > 4 else video_port + 10
+    print(f"[*] Connecting to LiveStreamServer with adaptive bitrate (control port: {control_port})...")
+    print("[*] Client will send buffer feedback to help the server adjust video quality dynamically.")
+    client = LiveStreamClient(host, video_port, audio_port, control_port=control_port)
+    try:
+        client.start()
+        print("[kn_sock] Connected to live stream. Press 'q' in the video window or Ctrl+C to stop.")
+        while client._running.is_set():
+            time.sleep(1)
+    except (KeyboardInterrupt, SystemExit):
+        print("\n[kn_sock] Stopping live stream client...")
+    finally:
+        client.stop() 

@@ -1,24 +1,24 @@
-import argparse
 import sys
-from kn_sock import start_live_stream
-import os
-
-# Dynamically import start_live_stream from kn_sock/live_stream.py
-#spec = importlib.util.spec_from_file_location(
-#    "live_stream", os.path.join(os.path.dirname(__file__), "..", "kn_sock", "live_stream.py")
-#)
-#live_stream = importlib.util.module_from_spec(spec)
-#sys.modules["live_stream"] = live_stream
-#spec.loader.exec_module(live_stream)
-#start_live_stream = live_stream.start_live_stream
+import time
+from kn_sock.live_stream import LiveStreamServer
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Start a live video/audio stream server using kn_sock.")
-    parser.add_argument("port", type=int, help="Port for video stream (audio will use port+1 by default)")
-    parser.add_argument("video_path", type=str, help="Path to video file to stream")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind (default: 0.0.0.0)")
-    parser.add_argument("--audio-port", type=int, default=None, help="Port for audio stream (default: port+1)")
-    args = parser.parse_args()
-
-    print(f"[examples/server_live.py] Starting live stream server on {args.host}:{args.port} (audio: {args.audio_port or args.port+1}) for video: {args.video_path}")
-    start_live_stream(args.port, args.video_path, host=args.host, audio_port=args.audio_port) 
+    if len(sys.argv) < 2:
+        print("Usage: python server_live.py <video_path> [video_port] [audio_port] [control_port]")
+        sys.exit(1)
+    video_path = sys.argv[1]
+    video_port = int(sys.argv[2]) if len(sys.argv) > 2 else 8000
+    audio_port = int(sys.argv[3]) if len(sys.argv) > 3 else 8001
+    control_port = int(sys.argv[4]) if len(sys.argv) > 4 else video_port + 10
+    print(f"[*] Starting LiveStreamServer with adaptive bitrate (control port: {control_port})...")
+    print("[*] Clients will send buffer feedback to help the server adjust video quality dynamically.")
+    server = LiveStreamServer(video_path, video_port=video_port, audio_port=audio_port, control_port=control_port)
+    try:
+        server.start()
+        print("[kn_sock] Live stream server started. Press Ctrl+C to stop.")
+        while True:
+            time.sleep(1)
+    except (KeyboardInterrupt, SystemExit):
+        print("\n[kn_sock] Stopping live stream server...")
+    finally:
+        server.stop() 

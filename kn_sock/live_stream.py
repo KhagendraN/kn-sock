@@ -5,6 +5,7 @@ import os
 import queue
 import struct
 import json
+from kn_sock.json_socket import send_json_response, _recv_line
 
 # Dependency checks
 try:
@@ -24,8 +25,10 @@ class LiveStreamServer:
     A server that streams video and audio from a file to multiple clients.
     Automatically extracts audio from the video file using FFmpeg.
     """
-    def __init__(self, video_path, host='0.0.0.0', video_port=8000, audio_port=8001, control_port=None):
-        self.video_path = video_path
+    def __init__(self, video_paths, host='0.0.0.0', video_port=8000, audio_port=8001, control_port=None):
+        if isinstance(video_paths, str):
+            video_paths = [video_paths]
+        self.video_paths = video_paths
         self.audio_path = "temp_audio.wav"
         self.host = host
         self.video_port = video_port
@@ -36,14 +39,14 @@ class LiveStreamServer:
         self.audio_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._running = threading.Event()
-        self._extract_audio()
+        self._extract_audio(self.video_paths[0])
         self._client_quality = {}  # addr -> jpeg quality
 
-    def _extract_audio(self):
+    def _extract_audio(self, video_path):
         print("[*] Extracting audio from video file...")
         command = [
             'ffmpeg',
-            '-i', self.video_path,
+            '-i', video_path,
             '-y',
             '-f', 'wav',
             '-ac', '2',
@@ -146,7 +149,22 @@ class LiveStreamServer:
     def _handle_client(self, client_socket, stream_type):
         try:
             if stream_type == "video":
-                self._stream_video(client_socket)
+                # Multi-video handshake
+                video_names = [os.path.basename(p) for p in self.video_paths]
+                send_json_response(client_socket, {"videos": video_names})
+                sel_bytes = _recv_line(client_socket)
+                if not sel_bytes:
+                    print("[VIDEO] Client disconnected before selection.")
+                    return
+                try:
+                    sel = int(json.loads(sel_bytes.decode().strip()).get("index", 0))
+                except Exception:
+                    sel = 0
+                sel = max(0, min(sel, len(self.video_paths)-1))
+                selected_video = self.video_paths[sel]
+                print(f"[VIDEO] Client selected video: {selected_video}")
+                self._extract_audio(selected_video)
+                self._stream_video(client_socket, selected_video)
             elif stream_type == "audio":
                 self._stream_audio(client_socket)
         except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
@@ -156,10 +174,10 @@ class LiveStreamServer:
                 self.clients.remove(client_socket)
             client_socket.close()
 
-    def _stream_video(self, client_socket):
-        cap = cv2.VideoCapture(self.video_path)
+    def _stream_video(self, client_socket, video_path):
+        cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            print(f"[!] Could not open video file: {self.video_path}. Try converting it to mp4 (H.264) format for best compatibility.")
+            print(f"[!] Could not open video file: {video_path}. Try converting it to mp4 (H.264) format for best compatibility.")
             return
         addr = client_socket.getpeername()
         while self._running.is_set():
@@ -167,7 +185,6 @@ class LiveStreamServer:
             if not ret:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 continue
-            # Use per-client quality if available
             quality = self._client_quality.get(addr, 80)
             _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
             data = np.array(buffer).tobytes()
@@ -198,18 +215,18 @@ class LiveStreamServer:
         except FileNotFoundError:
             return
 
-def start_live_stream(port, video_path, host='0.0.0.0', audio_port=None):
+def start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None):
     """
-    Starts a live stream server for the given video file.
+    Starts a live stream server for the given video file(s).
     Args:
         port (int): Port for video stream.
-        video_path (str): Path to video file.
+        video_paths (list[str]): Path(s) to video file(s).
         host (str): Host to bind (default 0.0.0.0).
         audio_port (int): Port for audio stream (default: port+1).
     """
     if audio_port is None:
         audio_port = port + 1
-    server = LiveStreamServer(video_path, host, port, audio_port)
+    server = LiveStreamServer(video_paths, host, port, audio_port)
     try:
         server.start()
         print("[kn_sock] Live stream server started. Press Ctrl+C to stop.")
@@ -299,6 +316,25 @@ class LiveStreamClient:
         try:
             self.video_socket.connect((self.host, self.video_port))
             print("[*] Connected to video stream.")
+            # Multi-video handshake
+            video_list_bytes = _recv_line(self.video_socket)
+            video_list = json.loads(video_list_bytes.decode().strip())
+            videos = video_list.get("videos", [])
+            if len(videos) > 1:
+                print("Available videos:")
+                for i, v in enumerate(videos):
+                    print(f"  {i}: {v}")
+                while True:
+                    try:
+                        sel = int(input(f"Select video [0-{len(videos)-1}]: "))
+                        if 0 <= sel < len(videos):
+                            break
+                    except Exception:
+                        pass
+                sel_json = json.dumps({"index": sel}) + '\n'
+                self.video_socket.sendall(sel_json.encode('utf-8'))
+            else:
+                self.video_socket.sendall(json.dumps({"index": 0}).encode('utf-8') + b'\n')
             self.audio_socket.connect((self.host, self.audio_port))
             print("[*] Connected to audio stream.")
             self.control_socket.connect((self.host, self.control_port))

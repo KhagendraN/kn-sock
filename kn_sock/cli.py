@@ -79,7 +79,7 @@ def run_cli():
     # --------------------------
     live_server = subparsers.add_parser("run-live-server", help="Start a live video/audio stream server")
     live_server.add_argument("port", type=int, help="Port for video stream (audio will use port+1 by default)")
-    live_server.add_argument("video_path", type=str, help="Path to video file to stream")
+    live_server.add_argument("video_paths", type=str, nargs='+', help="Path(s) to video file(s) to stream (one or more)")
     live_server.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind (default: 0.0.0.0)")
     live_server.add_argument("--audio-port", type=int, default=None, help="Port for audio stream (default: port+1)")
 
@@ -201,7 +201,7 @@ def run_cli():
         start_file_server(args.port, args.save_dir)
 
     elif args.command == "run-live-server":
-        start_live_stream(args.port, args.video_path, host=args.host, audio_port=args.audio_port)
+        start_live_stream(args.port, args.video_paths, host=args.host, audio_port=args.audio_port)
 
     elif args.command == "connect-live-server":
         connect_to_live_server(args.ip, args.port, audio_port=args.audio_port)

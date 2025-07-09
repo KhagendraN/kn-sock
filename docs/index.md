@@ -886,4 +886,21 @@ except FileTransferError as e:
 ### JSON Functions
 
 - `start_json_server(port, handler_func, host='0.0.0.0')`
-- `
+- `send_json(host, port, obj, timeout=5)`
+- `start_threaded_json_server(port, handler_func, host='0.0.0.0', shutdown_event=None)`
+- `send_json_async(host, port, obj, timeout=5)`
+
+## Real World Examples
+
+Explore ready-to-run scripts that solve common networking problems using kn-sock:
+
+- [IoT Protocol](real_world_examples/iot_protocol.py): Custom JSON protocol for IoT devices
+- [File Transfer](real_world_examples/file_transfer.py): Secure file transfer between machines
+- [Chat Application](real_world_examples/chat_app.py): Real-time chat using WebSockets
+- [Microservice RPC](real_world_examples/microservice_rpc.py): Remote procedure calls between services
+- [Remote Control](real_world_examples/remote_control.py): Remote monitoring and control of applications
+- [HTTP API Server](real_world_examples/http_api_server.py): Serve static files and simple APIs
+- [Live Streaming](real_world_examples/live_streaming.py): Live video/audio streaming
+- [Test Utilities](real_world_examples/test_utilities.py): Network test and utility scripts
+
+See the [Real World Examples directory](real_world_examples/) for all scripts and details.

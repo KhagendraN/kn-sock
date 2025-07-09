@@ -3,6 +3,32 @@ site_url: https://kn-sock.khagendraneupane.com.np
 repo_url: https://github.com/KhagendraN/kn-sock
 nav:
   - Home: index.md
+  - Examples:
+      - Live Streaming Server: examples/server_live.py
+      - Live Streaming Client: examples/client_live.py
+      - TCP Server: examples/tcp_server.py
+      - TCP Client: examples/tcp_client.py
+      - UDP Server: examples/udp_server.py
+      - UDP Client: examples/udp_client.py
+      - HTTP Server: examples/http_server.py
+      - HTTP Client: examples/http_client.py
+      - HTTPS Client: examples/https_client.py
+      - WebSocket Server: examples/websocket_server.py
+      - WebSocket Client: examples/websocket_client.py
+      - PubSub Server: examples/pubsub_server.py
+      - PubSub Client: examples/pubsub_client.py
+      - RPC Server: examples/rpc_server.py
+      - RPC Client: examples/rpc_client.py
+      - Browse All: examples/
+  - Real World Examples:
+      - IoT Protocol: real_world_examples/iot_protocol.py
+      - File Transfer: real_world_examples/file_transfer.py
+      - Chat Application: real_world_examples/chat_app.py
+      - Microservice RPC: real_world_examples/microservice_rpc.py
+      - Remote Control: real_world_examples/remote_control.py
+      - HTTP API Server: real_world_examples/http_api_server.py
+      - Live Streaming: real_world_examples/live_streaming.py
+      - Test Utilities: real_world_examples/test_utilities.py
 theme:
-  name: material  # looks better than default
+  name: material
 

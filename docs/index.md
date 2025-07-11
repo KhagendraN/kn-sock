@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.jpg" alt="kn-sock logo" width="128"/>
+</p>
+
 # kn-sock
 
 ![PyPI version](https://img.shields.io/pypi/v/kn-sock)

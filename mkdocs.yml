@@ -31,4 +31,5 @@ nav:
       - Test Utilities: real_world_examples/test_utilities.py
 theme:
   name: material
+  logo: kn-sock_logo.png
 

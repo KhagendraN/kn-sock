@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.jpg" alt="kn-sock logo" width="128"/>
+  <img src="Assets/kn-sock_logo.png" alt="kn-sock logo" width="128"/>
 </p>
 
 # kn-sock

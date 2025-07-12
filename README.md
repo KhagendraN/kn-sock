@@ -56,7 +56,10 @@ send_tcp_message("localhost", 8080, "Hello, World!")
 
 ## 📚 Documentation
 
-Full documentation is available at [kn-sock Documentation](https://kn-sock.khagendraneupane.com.np).
+### Full documentation is available at
+- [kn-sock official site](https://kn-sock.khagendraneupane.com.np)
+- [Github documentation](https://github.com/KhagendraN/kn-sock/blob/main/docs/index.md)
+
 
 ---
 

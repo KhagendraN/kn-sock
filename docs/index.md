@@ -299,7 +299,7 @@ send_json("localhost", 8080, {"message": "Hello, World!"})
 ```python
 from kn_sock import start_file_server
 
-start_file_server(8080)
+start_file_server(8080, "/path/to/save/directory")
 ```
 
 #### File Client
@@ -310,19 +310,43 @@ from kn_sock import send_file
 send_file("localhost", 8080, "path/to/your/file.txt")
 ```
 
-## Live Streaming
+#### Async File Transfer
 
-The `kn_sock` library supports live video and audio streaming from a video file to multiple clients, using both Python API and CLI.
+```python
+from kn_sock import start_file_server_async, send_file_async
+import asyncio
+
+# Async server
+asyncio.run(start_file_server_async(8080, "/path/to/save/directory"))
+
+# Async client
+asyncio.run(send_file_async("localhost", 8080, "path/to/your/file.txt"))
+```
+
+## Live Video/Audio Streaming (Multi-Video Selection)
+
+The `kn_sock` library supports live video and audio streaming from one or more video files to multiple clients, with adaptive bitrate and smooth playback.
 
 > **Note:** For best compatibility, use video files encoded as mp4 (H.264). Some formats (e.g., AV1) may not be supported by your OpenCV/FFmpeg installation.
+
+### Features
+
+- **Multi-Video Support**: Server can offer multiple videos; clients select which to play
+- **Adaptive Bitrate**: Server adjusts video quality per client based on buffer feedback
+- **Jitter Buffer**: Client-side buffering for smooth video/audio playback
+- **Robust Audio Protocol**: Audio stream uses magic numbers and timestamps for resynchronization
+- **Real-time Feedback**: Client sends buffer status to server for quality adjustment
 
 ### Live Stream Server (Python)
 
 ```python
 from kn_sock import start_live_stream
 
-# Start a live stream server on port 9000, streaming from a video file
-start_live_stream(9000, "/path/to/video.mp4")
+# Start a live stream server with multiple videos
+start_live_stream(9000, ["video1.mp4", "video2.mp4", "video3.mp4"])
+
+# Or with a single video
+start_live_stream(9000, ["video.mp4"])
 ```
 
 ### Live Stream Client (Python)
@@ -330,16 +354,44 @@ start_live_stream(9000, "/path/to/video.mp4")
 ```python
 from kn_sock import connect_to_live_server
 
-# Connect to a live stream server at 192.168.1.10:9000
+# Connect to a live stream server
 connect_to_live_server("192.168.1.10", 9000)
+```
+
+### Advanced Usage with LiveStreamServer/LiveStreamClient
+
+```python
+from kn_sock.live_stream import LiveStreamServer, LiveStreamClient
+
+# Server with custom configuration
+server = LiveStreamServer(
+    video_paths=["video1.mp4", "video2.mp4"],
+    host='0.0.0.0',
+    video_port=8000,
+    audio_port=8001,
+    control_port=8010
+)
+server.start()
+
+# Client with custom buffer settings
+client = LiveStreamClient(
+    host='127.0.0.1',
+    video_port=8000,
+    audio_port=8001,
+    control_port=8010,
+    video_buffer_ms=200,  # 200ms video buffer
+    audio_buffer_ms=100,  # 100ms audio buffer
+    video_fps=30
+)
+client.start()
 ```
 
 ### Live Streaming via CLI
 
-- **Start a live stream server:**
+- **Start a live stream server with multiple videos:**
 
 ```bash
-kn-sock run-live-server 9000 /path/to/video.mp4
+kn-sock run-live-server 9000 video1.mp4 video2.mp4 video3.mp4
 # Optional: --host 0.0.0.0 --audio-port 9001
 ```
 
@@ -349,6 +401,27 @@ kn-sock run-live-server 9000 /path/to/video.mp4
 kn-sock connect-live-server 192.168.1.10 9000
 # Optional: --audio-port 9001
 ```
+
+### How It Works
+
+1. **Server Setup**: Server extracts audio from video files using FFmpeg
+2. **Client Connection**: Client connects to video, audio, and control ports
+3. **Video Selection**: If multiple videos are available, client is prompted to select one
+4. **Streaming**: Server streams video frames and audio chunks with timestamps
+5. **Adaptive Quality**: Client sends buffer feedback; server adjusts JPEG quality (40-90)
+6. **Smooth Playback**: Client uses jitter buffers to smooth out network irregularities
+
+### Protocol Details
+
+- **Video Protocol**: Each frame is sent as `[8-byte timestamp][4-byte length][JPEG data]`
+- **Audio Protocol**: Each chunk is sent as `[4-byte magic][8-byte timestamp][4-byte length][audio data]`
+- **Control Protocol**: Client sends JSON feedback: `{"buffer_level": 0.2}`
+
+### Requirements
+
+- **Python Dependencies**: `opencv-python`, `pyaudio`, `numpy`
+- **System Dependencies**: `ffmpeg` (for audio extraction)
+- **Network**: TCP ports for video, audio, and control streams
 
 ## WebSocket Support
 
@@ -886,13 +959,52 @@ except FileTransferError as e:
 - `send_udp_message(host, port, message)`
 - `start_udp_server_async(port, handler_func, host='0.0.0.0', shutdown_event=None)`
 - `send_udp_message_async(host, port, message)`
+- `send_udp_multicast(group, port, message, ttl=1)`
+- `start_udp_multicast_server(group, port, handler_func, listen_ip='0.0.0.0', shutdown_event=None)`
+
+### File Transfer Functions
+
+- `send_file(host, port, filepath)`
+- `start_file_server(port, save_dir, host='0.0.0.0')`
+- `send_file_async(host, port, filepath)`
+- `start_file_server_async(port, save_dir, host='0.0.0.0')`
 
 ### JSON Functions
 
 - `start_json_server(port, handler_func, host='0.0.0.0')`
 - `send_json(host, port, obj, timeout=5)`
-- `start_threaded_json_server(port, handler_func, host='0.0.0.0', shutdown_event=None)`
-- `send_json_async(host, port, obj, timeout=5)`
+- `start_json_server_async(port, handler_func, host='0.0.0.0')`
+- `send_json_async(host, port, obj)`
+- `send_json_response(sock, data)`
+- `send_json_response_async(writer, data)`
+
+### WebSocket Functions
+
+- `start_websocket_server(host, port, handler, shutdown_event=None)`
+- `connect_websocket(host, port, resource='/', headers=None)`
+
+### HTTP/HTTPS Functions
+
+- `http_get(host, port=80, path='/', headers=None)`
+- `http_post(host, port=80, path='/', data='', headers=None)`
+- `https_get(host, port=443, path='/', headers=None, cafile=None)`
+- `https_post(host, port=443, path='/', data='', headers=None, cafile=None)`
+- `start_http_server(host, port, static_dir=None, routes=None, shutdown_event=None)`
+
+### Pub/Sub Functions
+
+- `start_pubsub_server(port, handler_func=None, host='0.0.0.0', shutdown_event=None)`
+- `PubSubClient(host, port)`
+
+### RPC Functions
+
+- `start_rpc_server(port, register_funcs, host='0.0.0.0', shutdown_event=None)`
+- `RPCClient(host, port)`
+
+### Live Streaming Functions
+
+- `start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None)`
+- `connect_to_live_server(ip, port, audio_port=None)`
 
 ## Real World Examples
 

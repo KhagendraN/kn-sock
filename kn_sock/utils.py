@@ -49,7 +49,7 @@ def recv_all(sock: socket.socket, total_bytes: int) -> bytes:
 # 📊 Progress Display
 # -----------------------------
 
-def print_progress(received: int, total: int):
+def print_progress(received: int, total: int) -> None:
     """Prints file transfer progress in percentage."""
     percent = (received / total) * 100
     print(f"\rProgress: {percent:.2f}% ({received}/{total} bytes)", end='')

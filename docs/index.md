@@ -1006,6 +1006,162 @@ except FileTransferError as e:
 - `start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None)`
 - `connect_to_live_server(ip, port, audio_port=None)`
 
+## Multi-Client Video Chat with Voice
+
+The `kn_sock` library now supports real-time multi-client video chat with voice, allowing multiple users to join a room and communicate with both video and audio in real time.
+
+### Features
+- **Multi-client support**: Multiple users can join the same room and see/hear each other.
+- **Rooms/Channels**: Users can join named rooms; only users in the same room see/hear each other.
+- **User Nicknames**: Each client can set a nickname, which is shared with the server and other clients.
+- **Text Chat**: Real-time text messaging with chat overlay on video window.
+- **Mute/Unmute**: Toggle audio on/off with keyboard shortcut.
+- **Video On/Off**: Toggle video camera on/off with keyboard shortcut.
+- **Real-time video and audio**: Uses OpenCV for video and PyAudio for audio.
+- **Simple API**: Easy to start a server or connect as a client.
+
+### Requirements
+- **Python Dependencies**: `opencv-python`, `pyaudio`, `numpy`, `pickle`
+- **Hardware**: Webcam and microphone for each client
+- **Network**: TCP ports for video, audio, and text streams (default: 9000, 9001, and 9002)
+
+> **Note:** Audio functionality requires proper PyAudio setup. If you encounter audio issues, you can disable audio and still use video and text chat features.
+
+### Example: Video Chat Server
+
+```python
+from kn_sock.video_chat import VideoChatServer
+
+server = VideoChatServer(host='0.0.0.0', video_port=9000, audio_port=9001, text_port=9002)
+server.start()
+print('Video chat server started on ports 9000 (video), 9001 (audio), and 9002 (text).')
+
+# Keep the server running
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    print('Server stopped.')
+```
+
+### Example: Video Chat Client (with Room and Nickname)
+
+```python
+from kn_sock.video_chat import VideoChatClient
+
+client = VideoChatClient(server_ip='127.0.0.1', video_port=9000, audio_port=9001, text_port=9002, room='myroom', nickname='alice')
+client.start()
+print('Connected to video chat server in room "myroom" as "alice".')
+
+# Keep the client running
+try:
+    while client.running:
+        pass
+except KeyboardInterrupt:
+    print('Client stopped.')
+```
+
+### Client Controls
+
+When the video window is active, you can use these keyboard shortcuts:
+
+- **`m`**: Mute/unmute your microphone
+- **`v`**: Toggle your video camera on/off
+- **`q`**: Quit the application
+
+### Text Chat
+
+- Type messages in the terminal and press Enter to send
+- Chat messages appear as an overlay on the video window
+- Messages include timestamps and sender nicknames
+- Only users in the same room receive the messages
+
+### CLI Example
+
+You can also use the provided example scripts:
+
+```bash
+# Start the server
+python examples/video_chat_server.py
+
+# Start a client (in another terminal)
+python examples/video_chat_client.py <server_ip> <room> <nickname>
+```
+
+### CLI Commands
+
+The `kn-sock` CLI also supports video chat commands:
+
+```bash
+# Start a video chat server
+kn-sock run-video-chat-server --host 0.0.0.0 --video-port 9000 --audio-port 9001 --text-port 9002
+
+# Connect to a video chat server
+kn-sock connect-video-chat <server_ip> <room> <nickname> --video-port 9000 --audio-port 9001 --text-port 9002
+```
+
+> **Note:** Press 'q' in the video window or Ctrl+C in the terminal to stop the client.
+
+### Troubleshooting
+
+If you encounter issues with video or audio, run the diagnostic tool first:
+
+```bash
+python examples/video_chat_diagnostic.py
+```
+
+#### Common Issues and Solutions:
+
+**Audio Issues (Most Common):**
+If you encounter PyAudio assertion errors or audio crashes, try these solutions:
+
+1. **Disable audio temporarily:**
+   ```bash
+   python examples/video_chat_client.py 127.0.0.1 myroom alice --no-audio
+   ```
+
+2. **Use the no-audio client:**
+   ```bash
+   python examples/video_chat_client_no_audio.py 127.0.0.1 myroom alice
+   ```
+
+3. **Test audio separately:**
+   ```bash
+   python examples/test_audio_only.py
+   ```
+
+4. **Install audio drivers (Arch Linux):**
+   ```bash
+   sudo pacman -S pulseaudio pulseaudio-alsa
+   ```
+
+5. **Set audio environment variables:**
+   ```bash
+   export PULSE_SERVER=unix:/tmp/pulse-socket
+   export ALSA_PCM_CARD=0
+   ```
+
+**Display Issues:**
+```bash
+# Set display backend for OpenCV
+export QT_QPA_PLATFORM=xcb
+```
+
+**Camera Issues:**
+- Make sure your camera is not in use by another application
+- Check camera permissions
+- Try different camera device numbers if you have multiple cameras
+
+**Dependencies:**
+```bash
+# Install required packages
+pip install opencv-python pyaudio numpy
+```
+
+**Note:** The video chat feature works perfectly without audio. If you have persistent audio issues, you can still use video and text chat functionality.
+
+---
+
 ## Real World Examples
 
 Explore ready-to-run scripts that solve common networking problems using kn-sock:

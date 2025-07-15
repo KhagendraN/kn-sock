@@ -11,6 +11,7 @@ Features:
 - File transfer over TCP
 - Threaded/multi-client support
 - Command-line interface
+- Multi-client video chat with voice and text
 """
 
 __version__ = "0.1.0"
@@ -69,3 +70,6 @@ from .websocket import start_websocket_server, connect_websocket
 from .http import http_get, http_post, https_get, https_post, start_http_server
 from .pubsub import start_pubsub_server, PubSubClient
 from .rpc import start_rpc_server, RPCClient
+
+# Video Chat
+from .video_chat import VideoChatServer, VideoChatClient

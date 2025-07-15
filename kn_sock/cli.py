@@ -10,6 +10,7 @@ from kn_sock.websocket import start_websocket_server, connect_websocket
 from kn_sock.http import http_get, http_post, https_get, https_post, start_http_server
 from kn_sock.pubsub import start_pubsub_server, PubSubClient
 from kn_sock.rpc import start_rpc_server, RPCClient
+from kn_sock.video_chat import VideoChatServer, VideoChatClient
 import os
 import time
 
@@ -90,6 +91,26 @@ def run_cli():
     live_client.add_argument("ip", type=str, help="Server IP address")
     live_client.add_argument("port", type=int, help="Video port (audio will use port+1 by default)")
     live_client.add_argument("--audio-port", type=int, default=None, help="Audio port (default: port+1)")
+
+    # --------------------------
+    # run-video-chat-server
+    # --------------------------
+    video_chat_server = subparsers.add_parser("run-video-chat-server", help="Start a multi-client video chat server")
+    video_chat_server.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind (default: 0.0.0.0)")
+    video_chat_server.add_argument("--video-port", type=int, default=9000, help="Port for video stream (default: 9000)")
+    video_chat_server.add_argument("--audio-port", type=int, default=9001, help="Port for audio stream (default: 9001)")
+    video_chat_server.add_argument("--text-port", type=int, default=9002, help="Port for text chat (default: 9002)")
+
+    # --------------------------
+    # connect-video-chat
+    # --------------------------
+    video_chat_client = subparsers.add_parser("connect-video-chat", help="Connect to a video chat server")
+    video_chat_client.add_argument("server_ip", type=str, help="Server IP address")
+    video_chat_client.add_argument("room", type=str, help="Room name to join")
+    video_chat_client.add_argument("nickname", type=str, help="Your nickname")
+    video_chat_client.add_argument("--video-port", type=int, default=9000, help="Video port (default: 9000)")
+    video_chat_client.add_argument("--audio-port", type=int, default=9001, help="Audio port (default: 9001)")
+    video_chat_client.add_argument("--text-port", type=int, default=9002, help="Text port (default: 9002)")
 
     # --------------------------
     # run-ssl-tcp-server
@@ -206,27 +227,44 @@ def run_cli():
     elif args.command == "connect-live-server":
         connect_to_live_server(args.ip, args.port, audio_port=args.audio_port)
 
-    elif args.command == "run-ssl-tcp-server":
-        start_ssl_tcp_server(
-            args.port,
-            tcp_echo_handler,
-            certfile=args.certfile,
-            keyfile=args.keyfile,
-            cafile=args.cafile,
-            require_client_cert=args.require_client_cert,
-            host=args.host
+    elif args.command == "run-video-chat-server":
+        server = VideoChatServer(host=args.host, video_port=args.video_port, audio_port=args.audio_port, text_port=args.text_port)
+        print(f'Video chat server started on ports:')
+        print(f'  - {args.video_port} (video)')
+        print(f'  - {args.audio_port} (audio)')
+        print(f'  - {args.text_port} (text chat)')
+        print('Features: video/audio chat, text messaging, mute/unmute, video on/off')
+        server.start()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print('Server stopped.')
+
+    elif args.command == "connect-video-chat":
+        client = VideoChatClient(
+            server_ip=args.server_ip,
+            video_port=args.video_port,
+            audio_port=args.audio_port,
+            text_port=args.text_port,
+            room=args.room,
+            nickname=args.nickname
         )
+        print(f'Connecting to video chat server at {args.server_ip}:{args.video_port}/{args.audio_port}/{args.text_port}')
+        print(f'Room: "{args.room}", Nickname: "{args.nickname}"')
+        print('Controls: "m" to mute/unmute, "v" to toggle video, "q" to quit')
+        client.start()
+        try:
+            while client.running:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print('Client stopped.')
+
+    elif args.command == "run-ssl-tcp-server":
+        start_ssl_tcp_server(args.port, tcp_echo_handler, args.certfile, args.keyfile, cafile=args.cafile, require_client_cert=args.require_client_cert, host=args.host)
 
     elif args.command == "send-ssl-tcp":
-        send_ssl_tcp_message(
-            args.host,
-            args.port,
-            args.message,
-            cafile=args.cafile,
-            certfile=args.certfile,
-            keyfile=args.keyfile,
-            verify=not args.no_verify
-        )
+        send_ssl_tcp_message(args.host, args.port, args.message, cafile=args.cafile, certfile=args.certfile, keyfile=args.keyfile, verify=not args.no_verify)
 
     elif args.command == "run-websocket-server":
         def echo_handler(ws):
@@ -236,116 +274,54 @@ def run_cli():
                     msg = ws.recv()
                     if not msg:
                         break
-                    print(f"[WebSocket][SERVER] Received: {msg}")
                     ws.send(f"Echo: {msg}")
             finally:
                 ws.close()
                 print(f"[WebSocket][SERVER] Client disconnected: {ws.addr}")
-        import threading
-        shutdown_event = threading.Event()
-        server_thread = threading.Thread(
-            target=start_websocket_server,
-            args=(args.host, args.port, echo_handler),
-            kwargs={"shutdown_event": shutdown_event},
-            daemon=True
-        )
-        server_thread.start()
-        print("[WebSocket][SERVER] Running. Press Ctrl+C to stop.")
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[WebSocket][SERVER] Shutting down...")
-            shutdown_event.set()
-            server_thread.join()
+        start_websocket_server(args.host, args.port, echo_handler)
 
     elif args.command == "websocket-client":
         ws = connect_websocket(args.host, args.port)
-        print("[WebSocket][CLIENT] Connected to server.")
         ws.send(args.message)
-        print(f"[WebSocket][CLIENT] Sent: {args.message}")
         reply = ws.recv()
-        print(f"[WebSocket][CLIENT] Received: {reply}")
+        print(f"Received: {reply}")
         ws.close()
-        print("[WebSocket][CLIENT] Connection closed.")
 
     elif args.command == "http-get":
         body = http_get(args.host, args.port, args.path)
         print(body)
+
     elif args.command == "https-get":
         body = https_get(args.host, args.port, args.path)
         print(body)
+
     elif args.command == "http-post":
-        body = http_post(args.host, args.port, args.path, data=args.data)
+        body = http_post(args.host, args.port, args.path, args.data)
         print(body)
+
     elif args.command == "https-post":
-        body = https_post(args.host, args.port, args.path, data=args.data)
+        body = https_post(args.host, args.port, args.path, args.data)
         print(body)
 
     elif args.command == "run-http-server":
         def hello_route(request, client_sock):
-            client_sock.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nHello")
+            client_sock.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!")
         def echo_post(request, client_sock):
-            body = request['raw'].split(b'\r\n\r\n', 1)[-1]
-            resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body
-            client_sock.sendall(resp)
-        routes = {
-            ("GET", "/hello"): hello_route,
-            ("POST", "/echo"): echo_post,
-        }
-        import threading
-        shutdown_event = threading.Event()
-        server_thread = threading.Thread(
-            target=start_http_server,
-            args=(args.host, args.port),
-            kwargs={"static_dir": args.static_dir, "routes": routes, "shutdown_event": shutdown_event},
-            daemon=True
-        )
-        server_thread.start()
-        print("[HTTP][SERVER] Running. Press Ctrl+C to stop.")
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[HTTP][SERVER] Shutting down...")
-            shutdown_event.set()
-            server_thread.join()
+            client_sock.send(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nEcho: " + request.split(b'\r\n\r\n', 1)[1])
+        routes = {"/hello": hello_route, "/echo": echo_post}
+        start_http_server(args.host, args.port, static_dir=args.static_dir, routes=routes)
 
     elif args.command == "run-pubsub-server":
-        import threading
-        shutdown_event = threading.Event()
-        server_thread = threading.Thread(
-            target=start_pubsub_server,
-            args=(args.port,),
-            kwargs={"host": args.host, "shutdown_event": shutdown_event},
-            daemon=True
-        )
-        server_thread.start()
-        print("[PubSub][SERVER] Running. Press Ctrl+C to stop.")
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[PubSub][SERVER] Shutting down...")
-            shutdown_event.set()
-            server_thread.join()
+        start_pubsub_server(args.port, host=args.host)
 
     elif args.command == "pubsub-client":
         client = PubSubClient(args.host, args.port)
         client.subscribe(args.topic)
-        print(f"[PubSub][CLIENT] Subscribed to '{args.topic}'")
         if args.message:
             client.publish(args.topic, args.message)
-            print(f"[PubSub][CLIENT] Published to '{args.topic}': {args.message}")
-        print("[PubSub][CLIENT] Waiting for messages (Ctrl+C to exit)...")
-        try:
-            while True:
-                msg = client.recv(timeout=5)
-                if msg:
-                    print(f"[PubSub][CLIENT] Received: {msg}")
-        except KeyboardInterrupt:
-            print("[PubSub][CLIENT] Closing connection.")
-            client.close()
+        msg = client.recv(timeout=2)
+        print(msg)
+        client.close()
 
     elif args.command == "run-rpc-server":
         def add(a, b):
@@ -353,43 +329,13 @@ def run_cli():
         def echo(msg):
             return msg
         funcs = {"add": add, "echo": echo}
-        import threading
-        shutdown_event = threading.Event()
-        server_thread = threading.Thread(
-            target=start_rpc_server,
-            args=(args.port, funcs),
-            kwargs={"host": args.host, "shutdown_event": shutdown_event},
-            daemon=True
-        )
-        server_thread.start()
-        print("[RPC][SERVER] Running. Press Ctrl+C to stop.")
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[RPC][SERVER] Shutting down...")
-            shutdown_event.set()
-            server_thread.join()
+        start_rpc_server(args.port, funcs, host=args.host)
 
     elif args.command == "rpc-client":
         client = RPCClient(args.host, args.port)
-        try:
-            # Try to parse args as ints or floats if possible
-            parsed_args = []
-            for a in args.args:
-                try:
-                    parsed_args.append(int(a))
-                except ValueError:
-                    try:
-                        parsed_args.append(float(a))
-                    except ValueError:
-                        parsed_args.append(a)
-            result = client.call(args.function, *parsed_args)
-            print(f"[RPC][CLIENT] {args.function}{tuple(parsed_args)} = {result}")
-        except Exception as e:
-            print(f"[RPC][CLIENT] Error: {e}")
-        finally:
-            client.close()
+        result = client.call(args.function, *args.args)
+        print(result)
+        client.close()
 
     else:
         parser.print_help()

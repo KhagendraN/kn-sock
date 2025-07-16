@@ -3,7 +3,8 @@ import threading
 import base64
 import hashlib
 import struct
-from typing import Callable
+from typing import Callable, Optional, Dict
+import asyncio
 
 GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 
@@ -158,4 +159,83 @@ def connect_websocket(host: str, port: int, resource: str = '/', headers: dict =
         resp += chunk
     if b"101" not in resp.split(b"\r\n", 1)[0]:
         raise ConnectionError("WebSocket handshake failed")
-    return WebSocketConnection(sock, (host, port)) 
+    return WebSocketConnection(sock, (host, port))
+
+# --- Async WebSocket Client ---
+class AsyncWebSocketConnection:
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        self.reader = reader
+        self.writer = writer
+        self.open = True
+
+    async def send(self, message: str):
+        payload = message.encode('utf-8')
+        header = b'\x81'
+        length = len(payload)
+        if length < 126:
+            header += struct.pack('B', length)
+        elif length < (1 << 16):
+            header += struct.pack('!BH', 126, length)
+        else:
+            header += struct.pack('!BQ', 127, length)
+        self.writer.write(header + payload)
+        await self.writer.drain()
+
+    async def recv(self) -> str:
+        first2 = await self.reader.readexactly(2)
+        if not first2:
+            self.open = False
+            return ''
+        fin_opcode, mask_len = first2
+        masked = mask_len & 0x80
+        length = mask_len & 0x7F
+        if length == 126:
+            length = struct.unpack('!H', await self.reader.readexactly(2))[0]
+        elif length == 127:
+            length = struct.unpack('!Q', await self.reader.readexactly(8))[0]
+        if masked:
+            mask = await self.reader.readexactly(4)
+            data = bytearray(await self.reader.readexactly(length))
+            for i in range(length):
+                data[i] ^= mask[i % 4]
+            return data.decode('utf-8')
+        else:
+            data = await self.reader.readexactly(length)
+            return data.decode('utf-8')
+
+    async def close(self):
+        try:
+            self.writer.write(b'\x88\x00')
+            await self.writer.drain()
+        except Exception:
+            pass
+        self.writer.close()
+        self.open = False
+
+async def async_connect_websocket(host: str, port: int, resource: str = '/', headers: Optional[Dict[str, str]] = None) -> AsyncWebSocketConnection:
+    import os
+    reader, writer = await asyncio.open_connection(host, port)
+    key = base64.b64encode(os.urandom(16)).decode()
+    req = (
+        f"GET {resource} HTTP/1.1\r\n"
+        f"Host: {host}:{port}\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        f"Sec-WebSocket-Key: {key}\r\n"
+        "Sec-WebSocket-Version: 13\r\n"
+    )
+    if headers:
+        for k, v in headers.items():
+            req += f"{k}: {v}\r\n"
+    req += "\r\n"
+    writer.write(req.encode())
+    await writer.drain()
+    resp = b''
+    while b'\r\n\r\n' not in resp:
+        chunk = await reader.read(1024)
+        if not chunk:
+            raise ConnectionError("WebSocket handshake failed")
+        resp += chunk
+    if b"101" not in resp.split(b"\r\n", 1)[0]:
+        raise ConnectionError("WebSocket handshake failed")
+    return AsyncWebSocketConnection(reader, writer) 

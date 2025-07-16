@@ -4,9 +4,11 @@ import time
 import json
 import functools
 import traceback
+import logging
 from typing import Callable, Any, Optional, Type
 from kn_sock.errors import InvalidJSONError
 
+logger = logging.getLogger(__name__)
 
 # -----------------------------
 # 🧾 Log Exceptions
@@ -22,8 +24,8 @@ def log_exceptions(raise_error: bool = True):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                print(f"[ERROR] Exception in '{func.__name__}': {e}")
-                traceback.print_exc()
+                logger.error(f"Exception in '{func.__name__}': {e}")
+                logger.debug(traceback.format_exc())
                 if raise_error:
                     raise
         return wrapper
@@ -71,7 +73,7 @@ def measure_time(func: Callable):
         start = time.time()
         result = func(*args, **kwargs)
         elapsed = time.time() - start
-        print(f"[TIMER] {func.__name__} executed in {elapsed:.4f} seconds")
+        logger.info(f"[TIMER] {func.__name__} executed in {elapsed:.4f} seconds")
         return result
     return wrapper
 

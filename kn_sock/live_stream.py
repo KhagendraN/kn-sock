@@ -5,7 +5,10 @@ import os
 import queue
 import struct
 import json
+import logging
 from kn_sock.json_socket import send_json_response, _recv_line
+
+logger = logging.getLogger(__name__)
 
 # Dependency checks
 try:
@@ -43,7 +46,7 @@ class LiveStreamServer:
         self._client_quality = {}  # addr -> jpeg quality
 
     def _extract_audio(self, video_path):
-        print("[*] Extracting audio from video file...")
+        logger.info("[*] Extracting audio from video file...")
         command = [
             'ffmpeg',
             '-i', video_path,
@@ -56,25 +59,25 @@ class LiveStreamServer:
         ]
         try:
             subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-            print(f"[*] Audio extracted successfully to {self.audio_path}")
+            logger.info(f"[*] Audio extracted successfully to {self.audio_path}")
         except FileNotFoundError:
-            print("[!] ERROR: ffmpeg command not found. Please install FFmpeg and ensure it's in your system's PATH.")
+            logger.error("[!] ERROR: ffmpeg command not found. Please install FFmpeg and ensure it's in your system's PATH.")
             raise
         except subprocess.CalledProcessError as e:
-            print(f"[!] ERROR: ffmpeg failed to extract audio. Error:\n{e.stderr.decode()}")
+            logger.error(f"[!] ERROR: ffmpeg failed to extract audio. Error:\n{e.stderr.decode()}")
             raise
 
     def start(self):
         self._running.set()
         self.video_socket.bind((self.host, self.video_port))
         self.video_socket.listen(5)
-        print(f"[*] Video server listening on {self.host}:{self.video_port}")
+        logger.info(f"[*] Video server listening on {self.host}:{self.video_port}")
         self.audio_socket.bind((self.host, self.audio_port))
         self.audio_socket.listen(5)
-        print(f"[*] Audio server listening on {self.host}:{self.audio_port}")
+        logger.info(f"[*] Audio server listening on {self.host}:{self.audio_port}")
         self.control_socket.bind((self.host, self.control_port))
         self.control_socket.listen(5)
-        print(f"[*] Control server listening on {self.host}:{self.control_port}")
+        logger.info(f"[*] Control server listening on {self.host}:{self.control_port}")
         threading.Thread(target=self._accept_clients, args=(self.video_socket, "video"), daemon=True).start()
         threading.Thread(target=self._accept_clients, args=(self.audio_socket, "audio"), daemon=True).start()
         threading.Thread(target=self._accept_control_clients, daemon=True).start()
@@ -92,16 +95,16 @@ class LiveStreamServer:
         try:
             if os.path.exists(self.audio_path):
                 os.remove(self.audio_path)
-                print(f"[*] Deleted temporary audio file: {self.audio_path}")
+                logger.info(f"[*] Deleted temporary audio file: {self.audio_path}")
         except OSError as e:
-            print(f"[!] Error removing temporary audio file: {e}")
-        print("[*] Server stopped.")
+            logger.error(f"[!] Error removing temporary audio file: {e}")
+        logger.info("[*] Server stopped.")
 
     def _accept_clients(self, server_socket, stream_type):
         while self._running.is_set():
             try:
                 client_socket, addr = server_socket.accept()
-                print(f"[*] Accepted {stream_type} connection from {addr[0]}:{addr[1]}")
+                logger.info(f"[*] Accepted {stream_type} connection from {addr[0]}:{addr[1]}")
                 self.clients.append(client_socket)
                 handler_thread = threading.Thread(target=self._handle_client, args=(client_socket, stream_type), daemon=True)
                 handler_thread.start()
@@ -112,7 +115,7 @@ class LiveStreamServer:
         while self._running.is_set():
             try:
                 client_sock, addr = self.control_socket.accept()
-                print(f"[*] Accepted control connection from {addr[0]}:{addr[1]}")
+                logger.info(f"[*] Accepted control connection from {addr[0]}:{addr[1]}")
                 threading.Thread(target=self._handle_control_client, args=(client_sock, addr), daemon=True).start()
             except socket.error:
                 break
@@ -154,7 +157,7 @@ class LiveStreamServer:
                 send_json_response(client_socket, {"videos": video_names})
                 sel_bytes = _recv_line(client_socket)
                 if not sel_bytes:
-                    print("[VIDEO] Client disconnected before selection.")
+                    logger.warning("[VIDEO] Client disconnected before selection.")
                     return
                 try:
                     sel = int(json.loads(sel_bytes.decode().strip()).get("index", 0))
@@ -162,13 +165,13 @@ class LiveStreamServer:
                     sel = 0
                 sel = max(0, min(sel, len(self.video_paths)-1))
                 selected_video = self.video_paths[sel]
-                print(f"[VIDEO] Client selected video: {selected_video}")
+                logger.info(f"[VIDEO] Client selected video: {selected_video}")
                 self._extract_audio(selected_video)
                 self._stream_video(client_socket, selected_video)
             elif stream_type == "audio":
                 self._stream_audio(client_socket)
         except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
-            print(f"[*] Client disconnected from {stream_type} stream.")
+            logger.warning(f"[*] Client disconnected from {stream_type} stream.")
         finally:
             if client_socket in self.clients:
                 self.clients.remove(client_socket)
@@ -177,7 +180,7 @@ class LiveStreamServer:
     def _stream_video(self, client_socket, video_path):
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            print(f"[!] Could not open video file: {video_path}. Try converting it to mp4 (H.264) format for best compatibility.")
+            logger.error(f"[!] Could not open video file: {video_path}. Try converting it to mp4 (H.264) format for best compatibility.")
             return
         addr = client_socket.getpeername()
         while self._running.is_set():
@@ -229,11 +232,11 @@ def start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None):
     server = LiveStreamServer(video_paths, host, port, audio_port)
     try:
         server.start()
-        print("[kn_sock] Live stream server started. Press Ctrl+C to stop.")
+        logger.info("[kn_sock] Live stream server started. Press Ctrl+C to stop.")
         while True:
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
-        print("\n[kn_sock] Stopping live stream server...")
+        logger.info("\n[kn_sock] Stopping live stream server...")
     finally:
         server.stop()
 
@@ -280,7 +283,7 @@ class JitterBuffer:
                 delay = play_at - now
                 # Sanity check: skip if delay is absurd
                 if delay > 2 or delay < -2:
-                    print(f"[JitterBuffer] Skipping frame/chunk due to unreasonable delay: {delay:.3f}s (ts={ts}, base_ts={base_ts})")
+                    logger.warning(f"[JitterBuffer] Skipping frame/chunk due to unreasonable delay: {delay:.3f}s (ts={ts}, base_ts={base_ts})")
                     continue
                 if delay > 0:
                     time.sleep(delay)
@@ -315,15 +318,15 @@ class LiveStreamClient:
         self._running.set()
         try:
             self.video_socket.connect((self.host, self.video_port))
-            print("[*] Connected to video stream.")
+            logger.info("[*] Connected to video stream.")
             # Multi-video handshake
             video_list_bytes = _recv_line(self.video_socket)
             video_list = json.loads(video_list_bytes.decode().strip())
             videos = video_list.get("videos", [])
             if len(videos) > 1:
-                print("Available videos:")
+                logger.info("Available videos:")
                 for i, v in enumerate(videos):
-                    print(f"  {i}: {v}")
+                    logger.info(f"  {i}: {v}")
                 while True:
                     try:
                         sel = int(input(f"Select video [0-{len(videos)-1}]: "))
@@ -336,11 +339,11 @@ class LiveStreamClient:
             else:
                 self.video_socket.sendall(json.dumps({"index": 0}).encode('utf-8') + b'\n')
             self.audio_socket.connect((self.host, self.audio_port))
-            print("[*] Connected to audio stream.")
+            logger.info("[*] Connected to audio stream.")
             self.control_socket.connect((self.host, self.control_port))
-            print("[*] Connected to control channel.")
+            logger.info("[*] Connected to control channel.")
         except ConnectionRefusedError:
-            print("[!] Connection refused. Make sure the server is running.")
+            logger.error("[!] Connection refused. Make sure the server is running.")
             return
         self.video_jitter.start(self._play_video_frame)
         self.audio_jitter.start(self._play_audio_chunk)
@@ -377,7 +380,7 @@ class LiveStreamClient:
             cv2.destroyAllWindows()
         except Exception:
             pass
-        print("[*] Client stopped.")
+        logger.info("[*] Client stopped.")
 
     def _play_video_frame(self, frame):
         import cv2
@@ -422,7 +425,7 @@ class LiveStreamClient:
                 frame = cv2.imdecode(np.frombuffer(frame_data, np.uint8), cv2.IMREAD_COLOR)
                 self.video_jitter.put(frame, timestamp=timestamp)
             except (ConnectionResetError, BrokenPipeError):
-                print("[!] Lost connection to video stream.")
+                logger.warning("[!] Lost connection to video stream.")
                 break
         self.stop()
 
@@ -439,7 +442,7 @@ class LiveStreamClient:
                 while len(data) < magic_size:
                     packet = self.audio_socket.recv(magic_size - len(data))
                     if not packet:
-                        print("[AUDIO] Socket closed while reading magic.")
+                        logger.warning("[AUDIO] Socket closed while reading magic.")
                         return
                     data += packet
                 if data[:magic_size] != AUDIO_MAGIC:
@@ -451,7 +454,7 @@ class LiveStreamClient:
                 while len(data) < ts_size + len_size:
                     packet = self.audio_socket.recv(ts_size + len_size - len(data))
                     if not packet:
-                        print("[AUDIO] Socket closed while reading header.")
+                        logger.warning("[AUDIO] Socket closed while reading header.")
                         return
                     data += packet
                 # timestamp = struct.unpack('!d', data[:ts_size])[0]  # Ignore timestamp for audio
@@ -461,20 +464,20 @@ class LiveStreamClient:
                 while len(data) < chunk_len:
                     packet = self.audio_socket.recv(chunk_len - len(data))
                     if not packet:
-                        print("[AUDIO] Socket closed while reading chunk.")
+                        logger.warning("[AUDIO] Socket closed while reading chunk.")
                         return
                     data += packet
                 chunk = data[:chunk_len]
                 data = data[chunk_len:]
                 if debug_count < 5:
-                    print(f"[AUDIO][DEBUG] chunk_size={len(chunk)}")
+                    logger.debug(f"[AUDIO][DEBUG] chunk_size={len(chunk)}")
                     debug_count += 1
                 self.stream.write(chunk)
             except (ConnectionResetError, BrokenPipeError):
-                print("[!] Lost connection to audio stream.")
+                logger.warning("[!] Lost connection to audio stream.")
                 break
             except Exception as e:
-                print(f"[AUDIO][ERROR] {e}")
+                logger.error(f"[AUDIO][ERROR] {e}")
                 break
 
 def connect_to_live_server(ip, port, audio_port=None):
@@ -490,10 +493,10 @@ def connect_to_live_server(ip, port, audio_port=None):
     client = LiveStreamClient(ip, port, audio_port)
     try:
         client.start()
-        print("[kn_sock] Connected to live stream. Press 'q' in the video window or Ctrl+C to stop.")
+        logger.info("[kn_sock] Connected to live stream. Press 'q' in the video window or Ctrl+C to stop.")
         while client._running.is_set():
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
-        print("\n[kn_sock] Stopping live stream client...")
+        logger.info("\n[kn_sock] Stopping live stream client...")
     finally:
         client.stop() 

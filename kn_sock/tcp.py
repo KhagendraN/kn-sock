@@ -3,10 +3,13 @@
 import socket
 import threading
 import asyncio
+import logging
 from typing import Callable, Awaitable
 import ssl
 import queue
 import time
+
+logger = logging.getLogger(__name__)
 
 BUFFER_SIZE = 1024
 
@@ -33,18 +36,18 @@ def start_tcp_server(port: int, handler_func: Callable[[bytes, tuple, socket.soc
     server_socket = socket.socket(family, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(5)
-    print(f"[TCP] Server listening on {host}:{port}")
+    logger.info(f"[TCP] Server listening on {host}:{port}")
 
     while True:
         if shutdown_event is not None and shutdown_event.is_set():
-            print("[TCP] Shutdown event set. Stopping server.")
+            logger.info("[TCP] Shutdown event set. Stopping server.")
             break
         try:
             server_socket.settimeout(1.0)
             client_socket, addr = server_socket.accept()
         except socket.timeout:
             continue
-        print(f"[TCP] Connection from {addr}")
+        logger.info(f"[TCP] Connection from {addr}")
         data = client_socket.recv(BUFFER_SIZE)
         if data:
             handler_func(data, addr, client_socket)
@@ -68,12 +71,12 @@ def start_threaded_tcp_server(port: int, handler_func: Callable[[bytes, tuple, s
     server_socket = socket.socket(family, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(10)
-    print(f"[TCP] Threaded server listening on {host}:{port}")
+    logger.info(f"[TCP] Threaded server listening on {host}:{port}")
 
     client_threads = []
 
     def client_thread(client_socket, addr):
-        print(f"[TCP] Client thread started for {addr}")
+        logger.info(f"[TCP] Client thread started for {addr}")
         try:
             while True:
                 data = client_socket.recv(BUFFER_SIZE)
@@ -81,15 +84,15 @@ def start_threaded_tcp_server(port: int, handler_func: Callable[[bytes, tuple, s
                     break
                 handler_func(data, addr, client_socket)
         except ConnectionResetError:
-            print(f"[TCP] Connection lost from {addr}")
+            logger.warning(f"[TCP] Connection lost from {addr}")
         finally:
             client_socket.close()
-            print(f"[TCP] Connection closed for {addr}")
+            logger.info(f"[TCP] Connection closed for {addr}")
 
     try:
         while True:
             if shutdown_event is not None and shutdown_event.is_set():
-                print("[TCP] Shutdown event set. Stopping threaded server.")
+                logger.info("[TCP] Shutdown event set. Stopping threaded server.")
                 break
             try:
                 server_socket.settimeout(1.0)
@@ -103,7 +106,7 @@ def start_threaded_tcp_server(port: int, handler_func: Callable[[bytes, tuple, s
         server_socket.close()
         for t in client_threads:
             t.join()
-        print("[TCP] Threaded server shutdown complete.")
+        logger.info("[TCP] Threaded server shutdown complete.")
 
 # -----------------------------
 # 📤 TCP Client (Sync)
@@ -119,7 +122,7 @@ def send_tcp_message(host: str, port: int, message: str):
         client_socket.sendall(message.encode('utf-8'))
         try:
             response = client_socket.recv(BUFFER_SIZE)
-            print(f"[TCP] Server response: {response.decode('utf-8')}")
+            logger.info(f"[TCP] Server response: {response.decode('utf-8')}")
         except:
             pass
 
@@ -129,7 +132,7 @@ def send_tcp_bytes(host: str, port: int, data: bytes):
         client_socket.sendall(data)
         try:
             response = client_socket.recv(BUFFER_SIZE)
-            print(f"[TCP] Server response: {response}")
+            logger.info(f"[TCP] Server response: {response}")
         except:
             pass
 
@@ -153,7 +156,7 @@ async def start_async_tcp_server(
     """
     async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr = writer.get_extra_info('peername')
-        print(f"[TCP][ASYNC] Connection from {addr}")
+        logger.info(f"[TCP][ASYNC] Connection from {addr}")
         try:
             while True:
                 data = await reader.read(BUFFER_SIZE)
@@ -161,21 +164,21 @@ async def start_async_tcp_server(
                     break
                 await handler_func(data, addr, writer)
         except Exception as e:
-            print(f"[TCP][ASYNC] Error: {e}")
+            logger.error(f"[TCP][ASYNC] Error: {e}")
         finally:
             writer.close()
             await writer.wait_closed()
-            print(f"[TCP][ASYNC] Connection closed from {addr}")
+            logger.info(f"[TCP][ASYNC] Connection closed from {addr}")
 
     server = await asyncio.start_server(handle_client, host, port)
-    print(f"[TCP][ASYNC] Async server listening on {host}:{port}")
+    logger.info(f"[TCP][ASYNC] Async server listening on {host}:{port}")
     async with server:
         if shutdown_event is not None:
             await shutdown_event.wait()
-            print("[TCP][ASYNC] Shutdown event set. Stopping async server.")
+            logger.info("[TCP][ASYNC] Shutdown event set. Stopping async server.")
         else:
             await server.serve_forever()
-    print("[TCP][ASYNC] Async server shutdown complete.")
+    logger.info("[TCP][ASYNC] Async server shutdown complete.")
 
 # -----------------------------
 # ⚡ Async TCP Client
@@ -187,7 +190,7 @@ async def send_tcp_message_async(host: str, port: int, message: str):
     await writer.drain()
     try:
         data = await reader.read(BUFFER_SIZE)
-        print(f"[TCP][ASYNC] Server says: {data.decode('utf-8')}")
+        logger.info(f"[TCP][ASYNC] Server says: {data.decode('utf-8')}")
     except:
         pass
     writer.close()
@@ -217,10 +220,10 @@ def start_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, req
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(5)
-    print(f"[SSL][TCP] Server listening on {host}:{port}")
+    logger.info(f"[SSL][TCP] Server listening on {host}:{port}")
     while True:
         if shutdown_event is not None and shutdown_event.is_set():
-            print("[SSL][TCP] Shutdown event set. Stopping server.")
+            logger.info("[SSL][TCP] Shutdown event set. Stopping server.")
             break
         try:
             server_socket.settimeout(1.0)
@@ -233,7 +236,7 @@ def start_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, req
             if data:
                 handler_func(data, addr, ssl_sock)
         except ssl.SSLError as e:
-            print(f"[SSL][TCP] SSL error: {e}")
+            logger.error(f"[SSL][TCP] SSL error: {e}")
         finally:
             try:
                 ssl_sock.close()
@@ -264,7 +267,7 @@ def send_ssl_tcp_message(host, port, message, cafile=None, certfile=None, keyfil
             ssock.sendall(message.encode('utf-8'))
             try:
                 response = ssock.recv(BUFFER_SIZE)
-                print(f"[SSL][TCP] Server response: {response.decode('utf-8')}")
+                logger.info(f"[SSL][TCP] Server response: {response.decode('utf-8')}")
             except Exception:
                 pass
 
@@ -301,7 +304,7 @@ async def start_async_ssl_tcp_server(
 
     async def handle_client(reader, writer):
         addr = writer.get_extra_info('peername')
-        print(f"[SSL][TCP][ASYNC] Connection from {addr}")
+        logger.info(f"[SSL][TCP][ASYNC] Connection from {addr}")
         try:
             while True:
                 data = await reader.read(BUFFER_SIZE)
@@ -309,23 +312,23 @@ async def start_async_ssl_tcp_server(
                     break
                 await handler_func(data, addr, writer)
         except Exception as e:
-            print(f"[SSL][TCP][ASYNC] Error: {e}")
+            logger.error(f"[SSL][TCP][ASYNC] Error: {e}")
         finally:
             writer.close()
             await writer.wait_closed()
-            print(f"[SSL][TCP][ASYNC] Connection closed from {addr}")
+            logger.info(f"[SSL][TCP][ASYNC] Connection closed from {addr}")
 
     server = await asyncio.start_server(
         handle_client, host, port, ssl=context
     )
-    print(f"[SSL][TCP][ASYNC] Async SSL server listening on {host}:{port}")
+    logger.info(f"[SSL][TCP][ASYNC] Async SSL server listening on {host}:{port}")
     async with server:
         if shutdown_event is not None:
             await shutdown_event.wait()
-            print("[SSL][TCP][ASYNC] Shutdown event set. Stopping async SSL server.")
+            logger.info("[SSL][TCP][ASYNC] Shutdown event set. Stopping async SSL server.")
         else:
             await server.serve_forever()
-    print("[SSL][TCP][ASYNC] Async SSL server shutdown complete.")
+    logger.info("[SSL][TCP][ASYNC] Async SSL server shutdown complete.")
 
 async def send_ssl_tcp_message_async(
     host,
@@ -358,7 +361,7 @@ async def send_ssl_tcp_message_async(
     await writer.drain()
     try:
         data = await reader.read(BUFFER_SIZE)
-        print(f"[SSL][TCP][ASYNC] Server says: {data.decode('utf-8')}")
+        logger.info(f"[SSL][TCP][ASYNC] Server says: {data.decode('utf-8')}")
     except Exception:
         pass
     writer.close()

@@ -82,4 +82,20 @@ def test_real_world_examples_scripts(script):
               (result.returncode == 1 and (b'usage' in result.stdout.lower() or b'usage' in result.stderr.lower())))
         assert ok, f"{script} failed: {result.stdout}\n{result.stderr}"
     except subprocess.TimeoutExpired:
-        pytest.skip(f"Timeout (likely server or interactive): {script}") 
+        pytest.skip(f"Timeout (likely server or interactive): {script}")
+
+# --- Performance Benchmark ---
+def test_tcp_message_throughput(benchmark):
+    from kn_sock.tcp import send_tcp_message, start_tcp_server
+    import threading
+    import time
+    results = []
+    def handler(data, addr, sock):
+        results.append(data)
+        sock.sendall(b'ack')
+    server_thread = threading.Thread(target=start_tcp_server, args=(9099, handler), daemon=True)
+    server_thread.start()
+    time.sleep(0.5)
+    def send():
+        send_tcp_message('127.0.0.1', 9099, 'ping')
+    benchmark(send) 

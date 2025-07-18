@@ -15,11 +15,11 @@ import zlib
 from typing import Union
 
 
-def compress_data(data: bytes, method: str = 'gzip') -> bytes:
+def compress_data(data: bytes, method: str = "gzip") -> bytes:
     """Compress data using gzip or deflate."""
-    if method == 'gzip':
+    if method == "gzip":
         return gzip.compress(data)
-    elif method == 'deflate':
+    elif method == "deflate":
         return zlib.compress(data)
     else:
         raise ValueError(f"Unsupported compression method: {method}")
@@ -27,7 +27,7 @@ def compress_data(data: bytes, method: str = 'gzip') -> bytes:
 
 def decompress_data(data: bytes) -> bytes:
     """Decompress data (auto-detect gzip or deflate)."""
-    if data[:2] == b'\x1f\x8b':  # gzip magic
+    if data[:2] == b"\x1f\x8b":  # gzip magic
         return gzip.decompress(data)
     try:
         return zlib.decompress(data)
@@ -37,10 +37,10 @@ def decompress_data(data: bytes) -> bytes:
 
 def detect_compression(data: bytes) -> str:
     """Detect compression type ('gzip', 'deflate', or 'none')."""
-    if data[:2] == b'\x1f\x8b':
-        return 'gzip'
+    if data[:2] == b"\x1f\x8b":
+        return "gzip"
     try:
         zlib.decompress(data)
-        return 'deflate'
+        return "deflate"
     except zlib.error:
-        return 'none' 
+        return "none"

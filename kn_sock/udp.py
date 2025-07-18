@@ -6,21 +6,24 @@ from typing import Callable, Awaitable
 
 BUFFER_SIZE = 1024
 
+
 def _get_socket_family(host):
     # Return AF_INET6 if host is IPv6, else AF_INET
-    if ':' in host:
+    if ":" in host:
         return socket.AF_INET6
     return socket.AF_INET
+
 
 # -----------------------------
 # 📥 Sync UDP Server
 # -----------------------------
 
+
 def start_udp_server(
     port: int,
     handler_func: Callable[[bytes, tuple, socket.socket], None],
-    host: str = '0.0.0.0',
-    shutdown_event=None
+    host: str = "0.0.0.0",
+    shutdown_event=None,
 ):
     """
     Starts a synchronous UDP server (IPv4/IPv6 supported) with graceful shutdown support.
@@ -47,9 +50,11 @@ def start_udp_server(
         handler_func(data, addr, server_socket)
     server_socket.close()
 
+
 # -----------------------------
 # 📤 Sync UDP Client
 # -----------------------------
+
 
 def send_udp_message(host: str, port: int, message: str):
     """
@@ -57,18 +62,20 @@ def send_udp_message(host: str, port: int, message: str):
     """
     family = _get_socket_family(host)
     with socket.socket(family, socket.SOCK_DGRAM) as sock:
-        sock.sendto(message.encode('utf-8'), (host, port))
+        sock.sendto(message.encode("utf-8"), (host, port))
         print(f"[UDP][SYNC] Sent to {host}:{port}")
+
 
 # -----------------------------
 # 📥 Async UDP Server
 # -----------------------------
 
+
 async def start_udp_server_async(
     port: int,
     handler_func: Callable[[bytes, tuple, asyncio.DatagramTransport], Awaitable[None]],
-    host: str = '0.0.0.0',
-    shutdown_event=None
+    host: str = "0.0.0.0",
+    shutdown_event=None,
 ):
     """
     Starts an asynchronous UDP server with graceful shutdown support.
@@ -78,19 +85,21 @@ async def start_udp_server_async(
         host (str): Host to bind.
         shutdown_event (asyncio.Event, optional): If provided, server will exit when event is set.
     """
+
     class UDPProtocol(asyncio.DatagramProtocol):
         def __init__(self, loop):
             self.loop = loop
+
         def connection_made(self, transport):
             self.transport = transport
             print(f"[UDP][ASYNC] Server listening on {host}:{port}")
+
         def datagram_received(self, data, addr):
             asyncio.create_task(handler_func(data, addr, self.transport))
 
     loop = asyncio.get_running_loop()
     transport, protocol = await loop.create_datagram_endpoint(
-        lambda: UDPProtocol(loop),
-        local_addr=(host, port)
+        lambda: UDPProtocol(loop), local_addr=(host, port)
     )
     try:
         if shutdown_event is not None:
@@ -103,9 +112,11 @@ async def start_udp_server_async(
         transport.close()
         print("[UDP][ASYNC] Async UDP server shutdown complete.")
 
+
 # -----------------------------
 # 📤 Async UDP Client
 # -----------------------------
+
 
 async def send_udp_message_async(host: str, port: int, message: str):
     """
@@ -113,12 +124,12 @@ async def send_udp_message_async(host: str, port: int, message: str):
     """
     loop = asyncio.get_running_loop()
     transport, _ = await loop.create_datagram_endpoint(
-        lambda: asyncio.DatagramProtocol(),
-        remote_addr=(host, port)
+        lambda: asyncio.DatagramProtocol(), remote_addr=(host, port)
     )
-    transport.sendto(message.encode('utf-8'))
+    transport.sendto(message.encode("utf-8"))
     print(f"[UDP][ASYNC] Sent to {host}:{port}")
     transport.close()
+
 
 def send_udp_multicast(group: str, port: int, message: str, ttl: int = 1):
     """
@@ -131,7 +142,7 @@ def send_udp_multicast(group: str, port: int, message: str, ttl: int = 1):
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
-    sock.sendto(message.encode('utf-8'), (group, port))
+    sock.sendto(message.encode("utf-8"), (group, port))
     sock.close()
 
 
@@ -139,8 +150,8 @@ def start_udp_multicast_server(
     group: str,
     port: int,
     handler_func: Callable[[bytes, tuple, socket.socket], None],
-    listen_ip: str = '0.0.0.0',
-    shutdown_event=None
+    listen_ip: str = "0.0.0.0",
+    shutdown_event=None,
 ):
     """
     Start a UDP multicast server that listens for messages on the given group and port.

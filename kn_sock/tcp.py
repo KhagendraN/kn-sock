@@ -13,17 +13,25 @@ logger = logging.getLogger(__name__)
 
 BUFFER_SIZE = 1024
 
+
 def _get_socket_family(host):
     # Return AF_INET6 if host is IPv6, else AF_INET
-    if ':' in host:
+    if ":" in host:
         return socket.AF_INET6
     return socket.AF_INET
+
 
 # -----------------------------
 # 🖥️ TCP Server (Synchronous)
 # -----------------------------
 
-def start_tcp_server(port: int, handler_func: Callable[[bytes, tuple, socket.socket], None], host: str = '0.0.0.0', shutdown_event=None):
+
+def start_tcp_server(
+    port: int,
+    handler_func: Callable[[bytes, tuple, socket.socket], None],
+    host: str = "0.0.0.0",
+    shutdown_event=None,
+):
     """
     Starts a synchronous TCP server (IPv4/IPv6 supported).
     Args:
@@ -54,11 +62,18 @@ def start_tcp_server(port: int, handler_func: Callable[[bytes, tuple, socket.soc
         client_socket.close()
     server_socket.close()
 
+
 # -----------------------------
 # 🧵 Threaded TCP Server
 # -----------------------------
 
-def start_threaded_tcp_server(port: int, handler_func: Callable[[bytes, tuple, socket.socket], None], host: str = '0.0.0.0', shutdown_event=None):
+
+def start_threaded_tcp_server(
+    port: int,
+    handler_func: Callable[[bytes, tuple, socket.socket], None],
+    host: str = "0.0.0.0",
+    shutdown_event=None,
+):
     """
     Starts a threaded TCP server (IPv4/IPv6 supported).
     Args:
@@ -108,9 +123,11 @@ def start_threaded_tcp_server(port: int, handler_func: Callable[[bytes, tuple, s
             t.join()
         logger.info("[TCP] Threaded server shutdown complete.")
 
+
 # -----------------------------
 # 📤 TCP Client (Sync)
 # -----------------------------
+
 
 def send_tcp_message(host: str, port: int, message: str):
     """
@@ -119,12 +136,13 @@ def send_tcp_message(host: str, port: int, message: str):
     family = _get_socket_family(host)
     with socket.socket(family, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((host, port))
-        client_socket.sendall(message.encode('utf-8'))
+        client_socket.sendall(message.encode("utf-8"))
         try:
             response = client_socket.recv(BUFFER_SIZE)
             logger.info(f"[TCP] Server response: {response.decode('utf-8')}")
         except:
             pass
+
 
 def send_tcp_bytes(host: str, port: int, data: bytes):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -136,15 +154,17 @@ def send_tcp_bytes(host: str, port: int, data: bytes):
         except:
             pass
 
+
 # -----------------------------
 # ⚡ Async TCP Server
 # -----------------------------
 
+
 async def start_async_tcp_server(
     port: int,
     handler_func: Callable[[bytes, tuple, asyncio.StreamWriter], Awaitable[None]],
-    host: str = '0.0.0.0',
-    shutdown_event: 'asyncio.Event' = None
+    host: str = "0.0.0.0",
+    shutdown_event: "asyncio.Event" = None,
 ):
     """
     Starts an asynchronous TCP server with graceful shutdown support.
@@ -154,8 +174,9 @@ async def start_async_tcp_server(
         host (str): Host to bind.
         shutdown_event (asyncio.Event, optional): If provided, server will exit when event is set.
     """
+
     async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        addr = writer.get_extra_info('peername')
+        addr = writer.get_extra_info("peername")
         logger.info(f"[TCP][ASYNC] Connection from {addr}")
         try:
             while True:
@@ -180,13 +201,15 @@ async def start_async_tcp_server(
             await server.serve_forever()
     logger.info("[TCP][ASYNC] Async server shutdown complete.")
 
+
 # -----------------------------
 # ⚡ Async TCP Client
 # -----------------------------
 
+
 async def send_tcp_message_async(host: str, port: int, message: str):
     reader, writer = await asyncio.open_connection(host, port)
-    writer.write(message.encode('utf-8'))
+    writer.write(message.encode("utf-8"))
     await writer.drain()
     try:
         data = await reader.read(BUFFER_SIZE)
@@ -196,7 +219,17 @@ async def send_tcp_message_async(host: str, port: int, message: str):
     writer.close()
     await writer.wait_closed()
 
-def start_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, require_client_cert=False, host='0.0.0.0', shutdown_event=None):
+
+def start_ssl_tcp_server(
+    port,
+    handler_func,
+    certfile,
+    keyfile,
+    cafile=None,
+    require_client_cert=False,
+    host="0.0.0.0",
+    shutdown_event=None,
+):
     """
     Starts a synchronous SSL/TLS TCP server with graceful shutdown support.
     Args:
@@ -244,7 +277,10 @@ def start_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, req
                 pass
     server_socket.close()
 
-def send_ssl_tcp_message(host, port, message, cafile=None, certfile=None, keyfile=None, verify=True):
+
+def send_ssl_tcp_message(
+    host, port, message, cafile=None, certfile=None, keyfile=None, verify=True
+):
     """
     Sends a message to an SSL/TLS TCP server and prints the response.
     Args:
@@ -263,13 +299,16 @@ def send_ssl_tcp_message(host, port, message, cafile=None, certfile=None, keyfil
     if certfile and keyfile:
         context.load_cert_chain(certfile=certfile, keyfile=keyfile)
     with socket.create_connection((host, port)) as sock:
-        with context.wrap_socket(sock, server_hostname=host if verify else None) as ssock:
-            ssock.sendall(message.encode('utf-8'))
+        with context.wrap_socket(
+            sock, server_hostname=host if verify else None
+        ) as ssock:
+            ssock.sendall(message.encode("utf-8"))
             try:
                 response = ssock.recv(BUFFER_SIZE)
                 logger.info(f"[SSL][TCP] Server response: {response.decode('utf-8')}")
             except Exception:
                 pass
+
 
 async def start_async_ssl_tcp_server(
     port,
@@ -278,8 +317,8 @@ async def start_async_ssl_tcp_server(
     keyfile,
     cafile=None,
     require_client_cert=False,
-    host='0.0.0.0',
-    shutdown_event=None
+    host="0.0.0.0",
+    shutdown_event=None,
 ):
     """
     Starts an asynchronous SSL/TLS TCP server with graceful shutdown support.
@@ -303,7 +342,7 @@ async def start_async_ssl_tcp_server(
         context.verify_mode = ssl.CERT_NONE
 
     async def handle_client(reader, writer):
-        addr = writer.get_extra_info('peername')
+        addr = writer.get_extra_info("peername")
         logger.info(f"[SSL][TCP][ASYNC] Connection from {addr}")
         try:
             while True:
@@ -318,26 +357,21 @@ async def start_async_ssl_tcp_server(
             await writer.wait_closed()
             logger.info(f"[SSL][TCP][ASYNC] Connection closed from {addr}")
 
-    server = await asyncio.start_server(
-        handle_client, host, port, ssl=context
-    )
+    server = await asyncio.start_server(handle_client, host, port, ssl=context)
     logger.info(f"[SSL][TCP][ASYNC] Async SSL server listening on {host}:{port}")
     async with server:
         if shutdown_event is not None:
             await shutdown_event.wait()
-            logger.info("[SSL][TCP][ASYNC] Shutdown event set. Stopping async SSL server.")
+            logger.info(
+                "[SSL][TCP][ASYNC] Shutdown event set. Stopping async SSL server."
+            )
         else:
             await server.serve_forever()
     logger.info("[SSL][TCP][ASYNC] Async SSL server shutdown complete.")
 
+
 async def send_ssl_tcp_message_async(
-    host,
-    port,
-    message,
-    cafile=None,
-    certfile=None,
-    keyfile=None,
-    verify=True
+    host, port, message, cafile=None, certfile=None, keyfile=None, verify=True
 ):
     """
     Sends a message to an SSL/TLS TCP server asynchronously and prints the response.
@@ -356,8 +390,10 @@ async def send_ssl_tcp_message_async(
         context.verify_mode = ssl.CERT_NONE
     if certfile and keyfile:
         context.load_cert_chain(certfile=certfile, keyfile=keyfile)
-    reader, writer = await asyncio.open_connection(host, port, ssl=context, server_hostname=host if verify else None)
-    writer.write(message.encode('utf-8'))
+    reader, writer = await asyncio.open_connection(
+        host, port, ssl=context, server_hostname=host if verify else None
+    )
+    writer.write(message.encode("utf-8"))
     await writer.drain()
     try:
         data = await reader.read(BUFFER_SIZE)
@@ -366,6 +402,7 @@ async def send_ssl_tcp_message_async(
         pass
     writer.close()
     await writer.wait_closed()
+
 
 class TCPConnectionPool:
     """
@@ -377,7 +414,19 @@ class TCPConnectionPool:
             data = conn.recv(1024)
         pool.closeall()
     """
-    def __init__(self, host, port, max_size=5, idle_timeout=30, ssl=False, cafile=None, certfile=None, keyfile=None, verify=True):
+
+    def __init__(
+        self,
+        host,
+        port,
+        max_size=5,
+        idle_timeout=30,
+        ssl=False,
+        cafile=None,
+        certfile=None,
+        keyfile=None,
+        verify=True,
+    ):
         self.host = host
         self.port = port
         self.max_size = max_size
@@ -394,13 +443,17 @@ class TCPConnectionPool:
     def _create_conn(self):
         s = socket.create_connection((self.host, self.port))
         if self.ssl:
-            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=self.cafile)
+            context = ssl.create_default_context(
+                ssl.Purpose.SERVER_AUTH, cafile=self.cafile
+            )
             if not self.verify:
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
             if self.certfile and self.keyfile:
                 context.load_cert_chain(certfile=self.certfile, keyfile=self.keyfile)
-            s = context.wrap_socket(s, server_hostname=self.host if self.verify else None)
+            s = context.wrap_socket(
+                s, server_hostname=self.host if self.verify else None
+            )
         return s
 
     class _PooledConn:
@@ -408,11 +461,14 @@ class TCPConnectionPool:
             self._pool = pool
             self._conn = conn
             self._closed = False
+
         def __enter__(self):
             return self._conn
+
         def __exit__(self, exc_type, exc_val, exc_tb):
             if not self._closed:
                 self._pool._release(self._conn)
+
         def close(self):
             if not self._closed:
                 self._conn.close()
@@ -422,7 +478,9 @@ class TCPConnectionPool:
         with self._lock:
             now = time.time()
             # Remove idle connections
-            self._pool = [(c, t) for (c, t) in self._pool if now - t < self.idle_timeout]
+            self._pool = [
+                (c, t) for (c, t) in self._pool if now - t < self.idle_timeout
+            ]
             if self._pool:
                 conn, _ = self._pool.pop()
                 self._used += 1
@@ -438,7 +496,9 @@ class TCPConnectionPool:
                     time.sleep(0.05)
                     self._lock.acquire()
                     now = time.time()
-                    self._pool = [(c, t) for (c, t) in self._pool if now - t < self.idle_timeout]
+                    self._pool = [
+                        (c, t) for (c, t) in self._pool if now - t < self.idle_timeout
+                    ]
                     if self._pool:
                         conn, _ = self._pool.pop()
                         self._used += 1

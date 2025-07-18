@@ -3,6 +3,7 @@ import threading
 import json
 from typing import Callable, Dict, Set, Optional
 
+
 class PubSubServer:
     def __init__(self):
         self.topics: Dict[str, Set[socket.socket]] = {}
@@ -23,7 +24,10 @@ class PubSubServer:
         with self.lock:
             for sock in list(self.topics.get(topic, [])):
                 try:
-                    data = json.dumps({"topic": topic, "message": message}).encode() + b"\n"
+                    data = (
+                        json.dumps({"topic": topic, "message": message}).encode()
+                        + b"\n"
+                    )
                     sock.sendall(data)
                 except Exception:
                     self.topics[topic].discard(sock)
@@ -35,11 +39,12 @@ class PubSubServer:
                 if not self.topics[topic]:
                     del self.topics[topic]
 
+
 def start_pubsub_server(
     port: int,
     handler_func: Optional[Callable[[dict, socket.socket, PubSubServer], None]] = None,
-    host: str = '0.0.0.0',
-    shutdown_event: Optional[threading.Event] = None
+    host: str = "0.0.0.0",
+    shutdown_event: Optional[threading.Event] = None,
 ):
     """
     Start a TCP pub/sub server. Handles subscribe, unsubscribe, and publish actions.
@@ -55,16 +60,17 @@ def start_pubsub_server(
     sock.bind((host, port))
     sock.listen(5)
     print(f"[PubSub][SERVER] Listening on {host}:{port}")
+
     def client_thread(client_sock, addr):
         try:
-            buffer = b''
+            buffer = b""
             while True:
                 chunk = client_sock.recv(4096)
                 if not chunk:
                     break
                 buffer += chunk
-                while b'\n' in buffer:
-                    line, buffer = buffer.split(b'\n', 1)
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
                     try:
                         msg = json.loads(line.decode())
                     except Exception:
@@ -72,17 +78,18 @@ def start_pubsub_server(
                     if handler_func:
                         handler_func(msg, client_sock, server)
                     else:
-                        action = msg.get('action')
-                        topic = msg.get('topic')
-                        if action == 'subscribe':
+                        action = msg.get("action")
+                        topic = msg.get("topic")
+                        if action == "subscribe":
                             server.subscribe(topic, client_sock)
-                        elif action == 'unsubscribe':
+                        elif action == "unsubscribe":
                             server.unsubscribe(topic, client_sock)
-                        elif action == 'publish':
-                            server.publish(topic, msg.get('message', ''))
+                        elif action == "publish":
+                            server.publish(topic, msg.get("message", ""))
         finally:
             server.remove_client(client_sock)
             client_sock.close()
+
     try:
         while True:
             if shutdown_event is not None and shutdown_event.is_set():
@@ -93,19 +100,23 @@ def start_pubsub_server(
                 client_sock, addr = sock.accept()
             except socket.timeout:
                 continue
-            threading.Thread(target=client_thread, args=(client_sock, addr), daemon=True).start()
+            threading.Thread(
+                target=client_thread, args=(client_sock, addr), daemon=True
+            ).start()
     finally:
         sock.close()
         print("[PubSub][SERVER] Shutdown complete.")
+
 
 class PubSubClient:
     """
     Simple TCP pub/sub client. Use subscribe, unsubscribe, publish, and recv methods.
     """
+
     def __init__(self, host: str, port: int):
         self.sock = socket.create_connection((host, port))
         self.lock = threading.Lock()
-        self.recv_buffer = b''
+        self.recv_buffer = b""
 
     def subscribe(self, topic: str):
         self._send({"action": "subscribe", "topic": topic})
@@ -119,8 +130,8 @@ class PubSubClient:
     def recv(self, timeout: float = None) -> Optional[dict]:
         self.sock.settimeout(timeout)
         while True:
-            if b'\n' in self.recv_buffer:
-                line, self.recv_buffer = self.recv_buffer.split(b'\n', 1)
+            if b"\n" in self.recv_buffer:
+                line, self.recv_buffer = self.recv_buffer.split(b"\n", 1)
                 try:
                     return json.loads(line.decode())
                 except Exception:
@@ -135,7 +146,7 @@ class PubSubClient:
 
     def _send(self, msg: dict):
         with self.lock:
-            self.sock.sendall(json.dumps(msg).encode() + b'\n')
+            self.sock.sendall(json.dumps(msg).encode() + b"\n")
 
     def close(self):
-        self.sock.close() 
+        self.sock.close()

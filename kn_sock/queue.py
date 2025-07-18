@@ -25,6 +25,7 @@ import os
 import pickle
 import time
 
+
 class InMemoryQueue:
     def __init__(self):
         self._q = queue.Queue()
@@ -47,6 +48,7 @@ class InMemoryQueue:
     def empty(self):
         return self._q.empty()
 
+
 class FileQueue:
     def __init__(self, path: str):
         self.path = path
@@ -57,7 +59,7 @@ class FileQueue:
 
     def _load(self):
         if os.path.exists(self.path):
-            with open(self.path, 'rb') as f:
+            with open(self.path, "rb") as f:
                 try:
                     self._queue = pickle.load(f)
                 except Exception:
@@ -66,7 +68,7 @@ class FileQueue:
             self._queue = []
 
     def _save(self):
-        with open(self.path, 'wb') as f:
+        with open(self.path, "wb") as f:
             pickle.dump(self._queue, f)
 
     def put(self, item):
@@ -115,4 +117,4 @@ class FileQueue:
 
     def empty(self):
         with self.lock:
-            return not self._queue 
+            return not self._queue

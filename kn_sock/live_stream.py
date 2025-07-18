@@ -19,16 +19,27 @@ try:
     import subprocess
 except ImportError as e:
     missing = str(e).split("No module named ")[-1].replace("'", "")
-    raise ImportError(f"[kn_sock.live_stream] Missing required package: {missing}. Please install it to use live streaming.")
+    raise ImportError(
+        f"[kn_sock.live_stream] Missing required package: {missing}. Please install it to use live streaming."
+    )
 
-AUDIO_MAGIC = b'AUD0'
+AUDIO_MAGIC = b"AUD0"
+
 
 class LiveStreamServer:
     """
     A server that streams video and audio from a file to multiple clients.
     Automatically extracts audio from the video file using FFmpeg.
     """
-    def __init__(self, video_paths, host='0.0.0.0', video_port=8000, audio_port=8001, control_port=None):
+
+    def __init__(
+        self,
+        video_paths,
+        host="0.0.0.0",
+        video_port=8000,
+        audio_port=8001,
+        control_port=None,
+    ):
         if isinstance(video_paths, str):
             video_paths = [video_paths]
         self.video_paths = video_paths
@@ -48,23 +59,33 @@ class LiveStreamServer:
     def _extract_audio(self, video_path):
         logger.info("[*] Extracting audio from video file...")
         command = [
-            'ffmpeg',
-            '-i', video_path,
-            '-y',
-            '-f', 'wav',
-            '-ac', '2',
-            '-ar', '44100',
-            '-vn',
-            self.audio_path
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-y",
+            "-f",
+            "wav",
+            "-ac",
+            "2",
+            "-ar",
+            "44100",
+            "-vn",
+            self.audio_path,
         ]
         try:
-            subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            subprocess.run(
+                command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+            )
             logger.info(f"[*] Audio extracted successfully to {self.audio_path}")
         except FileNotFoundError:
-            logger.error("[!] ERROR: ffmpeg command not found. Please install FFmpeg and ensure it's in your system's PATH.")
+            logger.error(
+                "[!] ERROR: ffmpeg command not found. Please install FFmpeg and ensure it's in your system's PATH."
+            )
             raise
         except subprocess.CalledProcessError as e:
-            logger.error(f"[!] ERROR: ffmpeg failed to extract audio. Error:\n{e.stderr.decode()}")
+            logger.error(
+                f"[!] ERROR: ffmpeg failed to extract audio. Error:\n{e.stderr.decode()}"
+            )
             raise
 
     def start(self):
@@ -78,8 +99,12 @@ class LiveStreamServer:
         self.control_socket.bind((self.host, self.control_port))
         self.control_socket.listen(5)
         logger.info(f"[*] Control server listening on {self.host}:{self.control_port}")
-        threading.Thread(target=self._accept_clients, args=(self.video_socket, "video"), daemon=True).start()
-        threading.Thread(target=self._accept_clients, args=(self.audio_socket, "audio"), daemon=True).start()
+        threading.Thread(
+            target=self._accept_clients, args=(self.video_socket, "video"), daemon=True
+        ).start()
+        threading.Thread(
+            target=self._accept_clients, args=(self.audio_socket, "audio"), daemon=True
+        ).start()
         threading.Thread(target=self._accept_control_clients, daemon=True).start()
 
     def stop(self):
@@ -104,9 +129,15 @@ class LiveStreamServer:
         while self._running.is_set():
             try:
                 client_socket, addr = server_socket.accept()
-                logger.info(f"[*] Accepted {stream_type} connection from {addr[0]}:{addr[1]}")
+                logger.info(
+                    f"[*] Accepted {stream_type} connection from {addr[0]}:{addr[1]}"
+                )
                 self.clients.append(client_socket)
-                handler_thread = threading.Thread(target=self._handle_client, args=(client_socket, stream_type), daemon=True)
+                handler_thread = threading.Thread(
+                    target=self._handle_client,
+                    args=(client_socket, stream_type),
+                    daemon=True,
+                )
                 handler_thread.start()
             except socket.error:
                 break
@@ -116,7 +147,11 @@ class LiveStreamServer:
             try:
                 client_sock, addr = self.control_socket.accept()
                 logger.info(f"[*] Accepted control connection from {addr[0]}:{addr[1]}")
-                threading.Thread(target=self._handle_control_client, args=(client_sock, addr), daemon=True).start()
+                threading.Thread(
+                    target=self._handle_control_client,
+                    args=(client_sock, addr),
+                    daemon=True,
+                ).start()
             except socket.error:
                 break
 
@@ -125,8 +160,8 @@ class LiveStreamServer:
         self._client_quality[addr] = 80
         try:
             while self._running.is_set():
-                data = b''
-                while not data.endswith(b'\n'):
+                data = b""
+                while not data.endswith(b"\n"):
                     chunk = client_sock.recv(1024)
                     if not chunk:
                         break
@@ -163,7 +198,7 @@ class LiveStreamServer:
                     sel = int(json.loads(sel_bytes.decode().strip()).get("index", 0))
                 except Exception:
                     sel = 0
-                sel = max(0, min(sel, len(self.video_paths)-1))
+                sel = max(0, min(sel, len(self.video_paths) - 1))
                 selected_video = self.video_paths[sel]
                 logger.info(f"[VIDEO] Client selected video: {selected_video}")
                 self._extract_audio(selected_video)
@@ -180,7 +215,9 @@ class LiveStreamServer:
     def _stream_video(self, client_socket, video_path):
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            logger.error(f"[!] Could not open video file: {video_path}. Try converting it to mp4 (H.264) format for best compatibility.")
+            logger.error(
+                f"[!] Could not open video file: {video_path}. Try converting it to mp4 (H.264) format for best compatibility."
+            )
             return
         addr = client_socket.getpeername()
         while self._running.is_set():
@@ -189,19 +226,19 @@ class LiveStreamServer:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 continue
             quality = self._client_quality.get(addr, 80)
-            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
             data = np.array(buffer).tobytes()
             timestamp = time.time()
             try:
-                client_socket.sendall(struct.pack('!dI', timestamp, len(data)) + data)
+                client_socket.sendall(struct.pack("!dI", timestamp, len(data)) + data)
             except (socket.error, BrokenPipeError):
                 break
-            time.sleep(1/30)
+            time.sleep(1 / 30)
         cap.release()
 
     def _stream_audio(self, client_socket):
         try:
-            with wave.open(self.audio_path, 'rb') as wf:
+            with wave.open(self.audio_path, "rb") as wf:
                 chunk_size = 1024
                 while self._running.is_set():
                     data = wf.readframes(chunk_size)
@@ -211,14 +248,15 @@ class LiveStreamServer:
                     timestamp = time.time()
                     try:
                         # [4 bytes magic][8 bytes timestamp][4 bytes chunk_len][chunk]
-                        header = AUDIO_MAGIC + struct.pack('!dI', timestamp, len(data))
+                        header = AUDIO_MAGIC + struct.pack("!dI", timestamp, len(data))
                         client_socket.sendall(header + data)
                     except (socket.error, BrokenPipeError):
                         break
         except FileNotFoundError:
             return
 
-def start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None):
+
+def start_live_stream(port, video_paths, host="0.0.0.0", audio_port=None):
     """
     Starts a live stream server for the given video file(s).
     Args:
@@ -240,12 +278,14 @@ def start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None):
     finally:
         server.stop()
 
+
 class JitterBuffer:
     """
     Thread-safe buffer to smooth out irregular frame/chunk arrival times.
     Use for video/audio streaming to reduce jitter/stutter.
     """
-    def __init__(self, max_delay=0.2, target_interval=1/30):
+
+    def __init__(self, max_delay=0.2, target_interval=1 / 30):
         self.buffer = queue.Queue()
         self.max_delay = max_delay  # seconds of buffer (e.g., 0.2s)
         self.target_interval = target_interval  # e.g., 1/30 for 30fps
@@ -253,7 +293,9 @@ class JitterBuffer:
 
     def start(self, process_func):
         self._running.set()
-        threading.Thread(target=self._playback_loop, args=(process_func,), daemon=True).start()
+        threading.Thread(
+            target=self._playback_loop, args=(process_func,), daemon=True
+        ).start()
 
     def stop(self):
         self._running.clear()
@@ -269,7 +311,10 @@ class JitterBuffer:
         # Wait until buffer is filled to max_delay
         base_ts = None
         debug_count = 0
-        while self._running.is_set() and self.buffer.qsize() * self.target_interval < self.max_delay:
+        while (
+            self._running.is_set()
+            and self.buffer.qsize() * self.target_interval < self.max_delay
+        ):
             time.sleep(self.target_interval / 2)
         while self._running.is_set():
             try:
@@ -283,7 +328,9 @@ class JitterBuffer:
                 delay = play_at - now
                 # Sanity check: skip if delay is absurd
                 if delay > 2 or delay < -2:
-                    logger.warning(f"[JitterBuffer] Skipping frame/chunk due to unreasonable delay: {delay:.3f}s (ts={ts}, base_ts={base_ts})")
+                    logger.warning(
+                        f"[JitterBuffer] Skipping frame/chunk due to unreasonable delay: {delay:.3f}s (ts={ts}, base_ts={base_ts})"
+                    )
                     continue
                 if delay > 0:
                     time.sleep(delay)
@@ -291,12 +338,23 @@ class JitterBuffer:
             except queue.Empty:
                 continue
 
+
 class LiveStreamClient:
     """
     A client that receives and plays back video and audio streams from a server.
     Now uses a JitterBuffer for smooth playback.
     """
-    def __init__(self, host='127.0.0.1', video_port=8000, audio_port=8001, video_buffer_ms=200, audio_buffer_ms=200, video_fps=30, control_port=None):
+
+    def __init__(
+        self,
+        host="127.0.0.1",
+        video_port=8000,
+        audio_port=8001,
+        video_buffer_ms=200,
+        audio_buffer_ms=200,
+        video_fps=30,
+        control_port=None,
+    ):
         self.host = host
         self.video_port = video_port
         self.audio_port = audio_port
@@ -306,13 +364,19 @@ class LiveStreamClient:
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._running = threading.Event()
         self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(format=pyaudio.paInt16,
-                                  channels=2,
-                                  rate=44100,
-                                  output=True,
-                                  frames_per_buffer=1024)
-        self.video_jitter = JitterBuffer(max_delay=video_buffer_ms/1000, target_interval=1/video_fps)
-        self.audio_jitter = JitterBuffer(max_delay=audio_buffer_ms/1000, target_interval=1024/44100)
+        self.stream = self.p.open(
+            format=pyaudio.paInt16,
+            channels=2,
+            rate=44100,
+            output=True,
+            frames_per_buffer=1024,
+        )
+        self.video_jitter = JitterBuffer(
+            max_delay=video_buffer_ms / 1000, target_interval=1 / video_fps
+        )
+        self.audio_jitter = JitterBuffer(
+            max_delay=audio_buffer_ms / 1000, target_interval=1024 / 44100
+        )
 
     def start(self):
         self._running.set()
@@ -334,10 +398,12 @@ class LiveStreamClient:
                             break
                     except Exception:
                         pass
-                sel_json = json.dumps({"index": sel}) + '\n'
-                self.video_socket.sendall(sel_json.encode('utf-8'))
+                sel_json = json.dumps({"index": sel}) + "\n"
+                self.video_socket.sendall(sel_json.encode("utf-8"))
             else:
-                self.video_socket.sendall(json.dumps({"index": 0}).encode('utf-8') + b'\n')
+                self.video_socket.sendall(
+                    json.dumps({"index": 0}).encode("utf-8") + b"\n"
+                )
             self.audio_socket.connect((self.host, self.audio_port))
             logger.info("[*] Connected to audio stream.")
             self.control_socket.connect((self.host, self.control_port))
@@ -377,6 +443,7 @@ class LiveStreamClient:
         self.audio_jitter.stop()
         try:
             import cv2
+
             cv2.destroyAllWindows()
         except Exception:
             pass
@@ -384,8 +451,9 @@ class LiveStreamClient:
 
     def _play_video_frame(self, frame):
         import cv2
-        cv2.imshow('Live Stream', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+
+        cv2.imshow("Live Stream", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             self.stop()
 
     def _play_audio_chunk(self, chunk):
@@ -394,8 +462,10 @@ class LiveStreamClient:
     def _send_feedback_loop(self):
         while self._running.is_set():
             # Feedback: buffer fill level (in seconds)
-            buf_level = self.video_jitter.buffer.qsize() * self.video_jitter.target_interval
-            msg = json.dumps({"buffer_level": buf_level}) + '\n'
+            buf_level = (
+                self.video_jitter.buffer.qsize() * self.video_jitter.target_interval
+            )
+            msg = json.dumps({"buffer_level": buf_level}) + "\n"
             try:
                 self.control_socket.sendall(msg.encode())
             except Exception:
@@ -404,7 +474,8 @@ class LiveStreamClient:
 
     def _receive_video(self):
         import cv2
-        data = b''
+
+        data = b""
         payload_size = 12  # 8 bytes timestamp + 4 bytes length
         while self._running.is_set():
             try:
@@ -417,12 +488,14 @@ class LiveStreamClient:
                     break
                 packed = data[:payload_size]
                 data = data[payload_size:]
-                timestamp, msg_size = struct.unpack('!dI', packed)
+                timestamp, msg_size = struct.unpack("!dI", packed)
                 while len(data) < msg_size:
                     data += self.video_socket.recv(4 * 1024)
                 frame_data = data[:msg_size]
                 data = data[msg_size:]
-                frame = cv2.imdecode(np.frombuffer(frame_data, np.uint8), cv2.IMREAD_COLOR)
+                frame = cv2.imdecode(
+                    np.frombuffer(frame_data, np.uint8), cv2.IMREAD_COLOR
+                )
                 self.video_jitter.put(frame, timestamp=timestamp)
             except (ConnectionResetError, BrokenPipeError):
                 logger.warning("[!] Lost connection to video stream.")
@@ -434,7 +507,7 @@ class LiveStreamClient:
         ts_size = 8
         magic_size = 4
         len_size = 4
-        data = b''
+        data = b""
         debug_count = 0
         while self._running.is_set():
             try:
@@ -458,8 +531,8 @@ class LiveStreamClient:
                         return
                     data += packet
                 # timestamp = struct.unpack('!d', data[:ts_size])[0]  # Ignore timestamp for audio
-                chunk_len = struct.unpack('!I', data[ts_size:ts_size+len_size])[0]
-                data = data[ts_size+len_size:]
+                chunk_len = struct.unpack("!I", data[ts_size : ts_size + len_size])[0]
+                data = data[ts_size + len_size :]
                 # Read chunk
                 while len(data) < chunk_len:
                     packet = self.audio_socket.recv(chunk_len - len(data))
@@ -480,6 +553,7 @@ class LiveStreamClient:
                 logger.error(f"[AUDIO][ERROR] {e}")
                 break
 
+
 def connect_to_live_server(ip, port, audio_port=None):
     """
     Connects to a live stream server and plays the video/audio.
@@ -493,10 +567,12 @@ def connect_to_live_server(ip, port, audio_port=None):
     client = LiveStreamClient(ip, port, audio_port)
     try:
         client.start()
-        logger.info("[kn_sock] Connected to live stream. Press 'q' in the video window or Ctrl+C to stop.")
+        logger.info(
+            "[kn_sock] Connected to live stream. Press 'q' in the video window or Ctrl+C to stop."
+        )
         while client._running.is_set():
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         logger.info("\n[kn_sock] Stopping live stream client...")
     finally:
-        client.stop() 
+        client.stop()

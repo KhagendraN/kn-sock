@@ -18,6 +18,19 @@ __version__ = "0.1.0"
 __author__ = "Khagendra Neupane"
 __license__ = "MIT"
 
+import logging
+
+
+def configure_logging(level=logging.INFO, fmt=None):
+    """Configure kn_sock logging globally."""
+    if fmt is None:
+        fmt = "[%(levelname)s][%(name)s] %(message)s"
+    logging.basicConfig(level=level, format=fmt, force=True)
+
+
+# Set default logging config on import
+configure_logging()
+
 # TCP
 from .tcp import (
     send_tcp_message,
@@ -29,7 +42,7 @@ from .tcp import (
     send_ssl_tcp_message,
     start_async_ssl_tcp_server,
     send_ssl_tcp_message_async,
-    TCPConnectionPool
+    TCPConnectionPool,
 )
 
 # UDP
@@ -39,7 +52,7 @@ from .udp import (
     send_udp_message_async,
     start_udp_server_async,
     send_udp_multicast,
-    start_udp_multicast_server
+    start_udp_multicast_server,
 )
 
 # File Transfer
@@ -47,7 +60,7 @@ from .file_transfer import (
     send_file,
     start_file_server,
     send_file_async,
-    start_file_server_async
+    start_file_server_async,
 )
 
 # JSON Socket
@@ -57,7 +70,7 @@ from .json_socket import (
     start_json_server_async,
     send_json_async,
     send_json_response,
-    send_json_response_async
+    send_json_response_async,
 )
 
 # Utilities & Errors
@@ -66,10 +79,19 @@ from . import errors
 
 # Live Stream
 from .live_stream import start_live_stream, connect_to_live_server
-from .websocket import start_websocket_server, connect_websocket
+from .websocket import (
+    start_websocket_server,
+    connect_websocket,
+    async_connect_websocket,
+    AsyncWebSocketConnection,
+)
 from .http import http_get, http_post, https_get, https_post, start_http_server
 from .pubsub import start_pubsub_server, PubSubClient
 from .rpc import start_rpc_server, RPCClient
 
 # Video Chat
 from .video_chat import VideoChatServer, VideoChatClient
+
+from .compression import compress_data, decompress_data, detect_compression
+
+from .interactive_cli import KnSockInteractiveCLI

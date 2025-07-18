@@ -6,7 +6,8 @@ import struct
 from typing import Callable, Optional, Dict
 import asyncio
 
-GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
 
 class WebSocketConnection:
     def __init__(self, conn, addr):
@@ -16,15 +17,15 @@ class WebSocketConnection:
 
     def send(self, message: str):
         # Send a text frame
-        payload = message.encode('utf-8')
-        header = b'\x81'  # FIN + text frame
+        payload = message.encode("utf-8")
+        header = b"\x81"  # FIN + text frame
         length = len(payload)
         if length < 126:
-            header += struct.pack('B', length)
+            header += struct.pack("B", length)
         elif length < (1 << 16):
-            header += struct.pack('!BH', 126, length)
+            header += struct.pack("!BH", 126, length)
         else:
-            header += struct.pack('!BQ', 127, length)
+            header += struct.pack("!BQ", 127, length)
         self.conn.sendall(header + payload)
 
     def recv(self) -> str:
@@ -32,28 +33,28 @@ class WebSocketConnection:
         first2 = self.conn.recv(2)
         if not first2:
             self.open = False
-            return ''
+            return ""
         fin_opcode, mask_len = first2
         masked = mask_len & 0x80
         length = mask_len & 0x7F
         if length == 126:
-            length = struct.unpack('!H', self.conn.recv(2))[0]
+            length = struct.unpack("!H", self.conn.recv(2))[0]
         elif length == 127:
-            length = struct.unpack('!Q', self.conn.recv(8))[0]
+            length = struct.unpack("!Q", self.conn.recv(8))[0]
         if masked:
             mask = self.conn.recv(4)
             data = bytearray(self.conn.recv(length))
             for i in range(length):
                 data[i] ^= mask[i % 4]
-            return data.decode('utf-8')
+            return data.decode("utf-8")
         else:
             data = self.conn.recv(length)
-            return data.decode('utf-8')
+            return data.decode("utf-8")
 
     def close(self):
         # Send close frame
         try:
-            self.conn.sendall(b'\x88\x00')
+            self.conn.sendall(b"\x88\x00")
         except Exception:
             pass
         self.conn.close()
@@ -62,32 +63,37 @@ class WebSocketConnection:
 
 def _handshake(conn):
     # Minimal WebSocket handshake
-    request = b''
-    while b'\r\n\r\n' not in request:
+    request = b""
+    while b"\r\n\r\n" not in request:
         chunk = conn.recv(1024)
         if not chunk:
             return False
         request += chunk
     headers = {}
-    for line in request.decode().split('\r\n')[1:]:
-        if ': ' in line:
-            k, v = line.split(': ', 1)
+    for line in request.decode().split("\r\n")[1:]:
+        if ": " in line:
+            k, v = line.split(": ", 1)
             headers[k.lower()] = v
-    key = headers.get('sec-websocket-key')
+    key = headers.get("sec-websocket-key")
     if not key:
         return False
     accept = base64.b64encode(hashlib.sha1((key + GUID).encode()).digest()).decode()
     response = (
-        'HTTP/1.1 101 Switching Protocols\r\n'
-        'Upgrade: websocket\r\n'
-        'Connection: Upgrade\r\n'
-        f'Sec-WebSocket-Accept: {accept}\r\n\r\n'
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        f"Sec-WebSocket-Accept: {accept}\r\n\r\n"
     )
     conn.sendall(response.encode())
     return True
 
 
-def start_websocket_server(host: str, port: int, handler: Callable[[WebSocketConnection], None], shutdown_event=None):
+def start_websocket_server(
+    host: str,
+    port: int,
+    handler: Callable[[WebSocketConnection], None],
+    shutdown_event=None,
+):
     """
     Start a minimal WebSocket server.
     Args:
@@ -121,7 +127,9 @@ def start_websocket_server(host: str, port: int, handler: Callable[[WebSocketCon
         print("[WebSocket][SERVER] Shutdown complete.")
 
 
-def connect_websocket(host: str, port: int, resource: str = '/', headers: dict = None) -> WebSocketConnection:
+def connect_websocket(
+    host: str, port: int, resource: str = "/", headers: dict = None
+) -> WebSocketConnection:
     """
     Connect to a WebSocket server and return a WebSocketConnection.
     Args:
@@ -134,6 +142,7 @@ def connect_websocket(host: str, port: int, resource: str = '/', headers: dict =
     """
     import os
     import random
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     key = base64.b64encode(os.urandom(16)).decode()
@@ -151,8 +160,8 @@ def connect_websocket(host: str, port: int, resource: str = '/', headers: dict =
     req += "\r\n"
     sock.sendall(req.encode())
     # Read response
-    resp = b''
-    while b'\r\n\r\n' not in resp:
+    resp = b""
+    while b"\r\n\r\n" not in resp:
         chunk = sock.recv(1024)
         if not chunk:
             raise ConnectionError("WebSocket handshake failed")
@@ -160,6 +169,7 @@ def connect_websocket(host: str, port: int, resource: str = '/', headers: dict =
     if b"101" not in resp.split(b"\r\n", 1)[0]:
         raise ConnectionError("WebSocket handshake failed")
     return WebSocketConnection(sock, (host, port))
+
 
 # --- Async WebSocket Client ---
 class AsyncWebSocketConnection:
@@ -169,15 +179,15 @@ class AsyncWebSocketConnection:
         self.open = True
 
     async def send(self, message: str):
-        payload = message.encode('utf-8')
-        header = b'\x81'
+        payload = message.encode("utf-8")
+        header = b"\x81"
         length = len(payload)
         if length < 126:
-            header += struct.pack('B', length)
+            header += struct.pack("B", length)
         elif length < (1 << 16):
-            header += struct.pack('!BH', 126, length)
+            header += struct.pack("!BH", 126, length)
         else:
-            header += struct.pack('!BQ', 127, length)
+            header += struct.pack("!BQ", 127, length)
         self.writer.write(header + payload)
         await self.writer.drain()
 
@@ -185,35 +195,39 @@ class AsyncWebSocketConnection:
         first2 = await self.reader.readexactly(2)
         if not first2:
             self.open = False
-            return ''
+            return ""
         fin_opcode, mask_len = first2
         masked = mask_len & 0x80
         length = mask_len & 0x7F
         if length == 126:
-            length = struct.unpack('!H', await self.reader.readexactly(2))[0]
+            length = struct.unpack("!H", await self.reader.readexactly(2))[0]
         elif length == 127:
-            length = struct.unpack('!Q', await self.reader.readexactly(8))[0]
+            length = struct.unpack("!Q", await self.reader.readexactly(8))[0]
         if masked:
             mask = await self.reader.readexactly(4)
             data = bytearray(await self.reader.readexactly(length))
             for i in range(length):
                 data[i] ^= mask[i % 4]
-            return data.decode('utf-8')
+            return data.decode("utf-8")
         else:
             data = await self.reader.readexactly(length)
-            return data.decode('utf-8')
+            return data.decode("utf-8")
 
     async def close(self):
         try:
-            self.writer.write(b'\x88\x00')
+            self.writer.write(b"\x88\x00")
             await self.writer.drain()
         except Exception:
             pass
         self.writer.close()
         self.open = False
 
-async def async_connect_websocket(host: str, port: int, resource: str = '/', headers: Optional[Dict[str, str]] = None) -> AsyncWebSocketConnection:
+
+async def async_connect_websocket(
+    host: str, port: int, resource: str = "/", headers: Optional[Dict[str, str]] = None
+) -> AsyncWebSocketConnection:
     import os
+
     reader, writer = await asyncio.open_connection(host, port)
     key = base64.b64encode(os.urandom(16)).decode()
     req = (
@@ -230,12 +244,12 @@ async def async_connect_websocket(host: str, port: int, resource: str = '/', hea
     req += "\r\n"
     writer.write(req.encode())
     await writer.drain()
-    resp = b''
-    while b'\r\n\r\n' not in resp:
+    resp = b""
+    while b"\r\n\r\n" not in resp:
         chunk = await reader.read(1024)
         if not chunk:
             raise ConnectionError("WebSocket handshake failed")
         resp += chunk
     if b"101" not in resp.split(b"\r\n", 1)[0]:
         raise ConnectionError("WebSocket handshake failed")
-    return AsyncWebSocketConnection(reader, writer) 
+    return AsyncWebSocketConnection(reader, writer)

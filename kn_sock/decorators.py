@@ -14,10 +14,12 @@ logger = logging.getLogger(__name__)
 # 🧾 Log Exceptions
 # -----------------------------
 
+
 def log_exceptions(raise_error: bool = True):
     """
     Logs exceptions and optionally re-raises them.
     """
+
     def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -28,7 +30,9 @@ def log_exceptions(raise_error: bool = True):
                 logger.debug(traceback.format_exc())
                 if raise_error:
                     raise
+
         return wrapper
+
     return decorator
 
 
@@ -36,14 +40,12 @@ def log_exceptions(raise_error: bool = True):
 # 🔁 Retry Decorator
 # -----------------------------
 
-def retry(
-    retries: int = 3,
-    delay: float = 1.0,
-    exceptions: tuple = (Exception,)
-):
+
+def retry(retries: int = 3, delay: float = 1.0, exceptions: tuple = (Exception,)):
     """
     Retries a function upon failure, with delay.
     """
+
     def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -56,7 +58,9 @@ def retry(
                         time.sleep(delay)
                     else:
                         raise
+
         return wrapper
+
     return decorator
 
 
@@ -64,10 +68,12 @@ def retry(
 # ⏱️ Measure Execution Time
 # -----------------------------
 
+
 def measure_time(func: Callable):
     """
     Measures and prints execution time of the wrapped function.
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start = time.time()
@@ -75,6 +81,7 @@ def measure_time(func: Callable):
         elapsed = time.time() - start
         logger.info(f"[TIMER] {func.__name__} executed in {elapsed:.4f} seconds")
         return result
+
     return wrapper
 
 
@@ -82,11 +89,13 @@ def measure_time(func: Callable):
 # ✅ Ensure JSON Input
 # -----------------------------
 
+
 def ensure_json_input(func: Callable):
     """
     Validates that the first argument is a valid JSON object (dict or str).
     Raises InvalidJSONError otherwise.
     """
+
     @functools.wraps(func)
     def wrapper(data, *args, **kwargs):
         if isinstance(data, str):
@@ -98,4 +107,5 @@ def ensure_json_input(func: Callable):
             raise InvalidJSONError("Handler expects JSON object or string.")
 
         return func(data, *args, **kwargs)
+
     return wrapper

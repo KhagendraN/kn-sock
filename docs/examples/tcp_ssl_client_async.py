@@ -1,6 +1,7 @@
 import asyncio
 from kn_sock import send_ssl_tcp_message_async
 
+
 async def main():
     HOST = "localhost"
     PORT = 8443
@@ -15,8 +16,9 @@ async def main():
         cafile=CAFILE,
         certfile=CERTFILE,
         keyfile=KEYFILE,
-        verify=True
+        verify=True,
     )
 
+
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

@@ -13,6 +13,7 @@ How to run:
 import sys
 from kn_sock import start_live_stream, connect_to_live_server
 
+
 def server():
     if len(sys.argv) < 3:
         print("Usage: python live_streaming.py server <video_file>")
@@ -20,8 +21,10 @@ def server():
     video_file = sys.argv[2]
     start_live_stream(9600, [video_file])
 
+
 def client():
     connect_to_live_server("localhost", 9600)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -30,4 +33,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "server":
         server()
     else:
-        client() 
+        client()

@@ -6,4 +6,4 @@ if __name__ == "__main__":
     print(f"[RPC][CLIENT] add(2, 3) = {result}")
     result = client.call("echo", msg="Hello RPC!")
     print(f"[RPC][CLIENT] echo(msg='Hello RPC!') = {result}")
-    client.close() 
+    client.close()

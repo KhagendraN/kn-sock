@@ -1,5 +1,6 @@
 from kn_sock import start_tcp_server
 
+
 def handle_tcp_message(data, addr, client_socket):
     """
     Handle incoming TCP messages.
@@ -11,5 +12,6 @@ def handle_tcp_message(data, addr, client_socket):
     """
     print(f"Received from {addr}: {data.decode('utf-8')}")
     client_socket.sendall(b"Message received")
+
 
 start_tcp_server(8080, handle_tcp_message)

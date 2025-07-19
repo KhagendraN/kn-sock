@@ -13,13 +13,16 @@ How to run:
 import sys
 from kn_sock import get_free_port, get_local_ip
 
+
 def free_port():
     port = get_free_port()
     print("Free port:", port)
 
+
 def local_ip():
     ip = get_local_ip()
     print("Local IP:", ip)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -30,4 +33,4 @@ if __name__ == "__main__":
     elif sys.argv[1] == "local_ip":
         local_ip()
     else:
-        print("Unknown command.") 
+        print("Unknown command.")

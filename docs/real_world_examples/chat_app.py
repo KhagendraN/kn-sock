@@ -13,8 +13,10 @@ How to run:
 import sys
 from kn_sock import start_websocket_server, connect_websocket
 
+
 def server():
     clients = []
+
     def handler(ws):
         clients.append(ws)
         print(f"[Server] Client connected: {ws.addr}")
@@ -32,17 +34,21 @@ def server():
             ws.close()
             clients.remove(ws)
             print(f"[Server] Client disconnected: {ws.addr}")
+
     start_websocket_server("127.0.0.1", 9200, handler)
+
 
 def client():
     ws = connect_websocket("127.0.0.1", 9200)
     print("[Client] Connected. Type messages and press Enter. Ctrl+C to exit.")
     import threading
+
     def recv_loop():
         while ws.open:
             msg = ws.recv()
             if msg:
                 print("[Chat]", msg)
+
     threading.Thread(target=recv_loop, daemon=True).start()
     try:
         while True:
@@ -52,6 +58,7 @@ def client():
         ws.close()
         print("[Client] Disconnected.")
 
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python chat_app.py [server|client]")
@@ -59,4 +66,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "server":
         server()
     else:
-        client() 
+        client()

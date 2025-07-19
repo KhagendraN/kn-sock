@@ -118,21 +118,32 @@ Describe your changes clearly so reviewers understand the context.
    python -c "import kn_sock; print(kn_sock.__version__)"
    ```
 
-### Virtual Environment (Recommended)
+---
+
+### Docker-based Development & Testing
+
+- The project provides a `Dockerfile` for building a minimal Python environment with all dependencies.
+- The `docker-compose.yml` orchestrates two services:
+    - `knsock`: for running CLI commands
+    - `test`: for running the test suite
+
+**Common Docker commands:**
 
 ```bash
-# Create virtual environment
-python -m venv venv
+# Build the Docker image (uses Dockerfile)
+docker-compose build
 
-# Activate (Linux/Mac)
-source venv/bin/activate
+# Run CLI help
+docker-compose run knsock
 
-# Activate (Windows)
-venv\Scripts\activate
+# Run all tests
+docker-compose run test
 
-# Install dependencies
-pip install -r requirements.txt
-pip install -e .
+# Run a specific test file
+docker-compose run test pytest test/test_tcp_udp_msg.py -v
+
+# Interactive development shell
+docker run -it --rm -v $(pwd):/app knsock:latest bash
 ```
 
 ---
@@ -146,6 +157,20 @@ pip install -e .
 - Maximum line length: 88 characters (Black formatter default)
 - Use meaningful variable and function names
 - Add type hints to all public functions
+
+### Code Formatting, Linting, and Type Checking
+
+We use [Black](https://black.readthedocs.io/), [Flake8](https://flake8.pycqa.org/), and [mypy](http://mypy-lang.org/) for code quality. All are managed via [pre-commit](https://pre-commit.com/) hooks, configured in `.pre-commit-config.yaml`.
+
+**To set up and use pre-commit hooks:**
+
+```bash
+pip install pre-commit
+pre-commit install  # Set up git hooks
+pre-commit run --all-files  # Run on all files
+```
+
+This will automatically check formatting, linting, and types before you commit. See `.pre-commit-config.yaml` for details.
 
 ### Code Formatting
 
@@ -212,10 +237,10 @@ def test_function_name():
     """Test description of what is being tested."""
     # Arrange
     expected = "expected result"
-    
+
     # Act
     result = function_under_test()
-    
+
     # Assert
     assert result == expected
 ```
@@ -235,15 +260,15 @@ Example:
 ```python
 def send_tcp_message(host: str, port: int, message: str) -> None:
     """Send a message to a TCP server.
-    
+
     Args:
         host: The target host address.
         port: The target port number.
         message: The message to send.
-        
+
     Raises:
         ConnectionError: If connection fails.
-        
+
     Example:
         >>> send_tcp_message("localhost", 8080, "Hello, World!")
     """
@@ -274,9 +299,9 @@ When creating an issue, please include:
 Brief description of the bug
 
 ## Steps to Reproduce
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 What you expected to happen
@@ -285,9 +310,9 @@ What you expected to happen
 What actually happened
 
 ## Environment
-- OS: 
-- Python version: 
-- kn-sock version: 
+- OS:
+- Python version:
+- kn-sock version:
 
 ## Additional Information
 Any other context about the problem

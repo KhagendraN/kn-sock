@@ -8,7 +8,7 @@ if __name__ == "__main__":
         target=start_pubsub_server,
         args=(9000,),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     print("[PubSub][SERVER] Running. Will shutdown in 10 seconds...")
@@ -16,4 +16,4 @@ if __name__ == "__main__":
     print("[PubSub][SERVER] Triggering graceful shutdown...")
     shutdown_event.set()
     server_thread.join()
-    print("[PubSub][SERVER] Shutdown complete.") 
+    print("[PubSub][SERVER] Shutdown complete.")

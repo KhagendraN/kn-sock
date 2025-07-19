@@ -9,4 +9,4 @@ if __name__ == "__main__":
     print("[PubSub][CLIENT] Published to 'news'")
     msg = client.recv(timeout=2)
     print(f"[PubSub][CLIENT] Received: {msg}")
-    client.close() 
+    client.close()

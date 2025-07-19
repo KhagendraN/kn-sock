@@ -9,4 +9,17 @@ if __name__ == "__main__":
     reply = ws.recv()
     print(f"[WebSocket][CLIENT] Received: {reply}")
     ws.close()
-    print("[WebSocket][CLIENT] Connection closed.") 
+    print("[WebSocket][CLIENT] Connection closed.")
+
+# --- Example: Async WebSocket Client ---
+# import asyncio
+# from kn_sock.websocket import async_connect_websocket
+#
+# async def main():
+#     ws = await async_connect_websocket('localhost', 8765)
+#     await ws.send('Hello async WebSocket!')
+#     reply = await ws.recv()
+#     print(f"Received: {reply}")
+#     await ws.close()
+#
+# asyncio.run(main())

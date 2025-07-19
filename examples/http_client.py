@@ -7,4 +7,4 @@ if __name__ == "__main__":
 
     print("[HTTP][CLIENT] POST example:")
     body = http_post("httpbin.org", 80, "/post", data="foo=bar&baz=qux")
-    print(body[:200], "...\n") 
+    print(body[:200], "...\n")

@@ -31,7 +31,7 @@ def configure_logging(level=logging.INFO, fmt=None):
 # Set default logging config on import
 configure_logging()
 
-# TCP
+# Only import and expose public API symbols that are actually used. Remove unused imports and fix E402 errors by placing imports at the top.
 from .tcp import (
     send_tcp_message,
     start_tcp_server,
@@ -44,8 +44,6 @@ from .tcp import (
     send_ssl_tcp_message_async,
     TCPConnectionPool,
 )
-
-# UDP
 from .udp import (
     send_udp_message,
     start_udp_server,
@@ -54,16 +52,12 @@ from .udp import (
     send_udp_multicast,
     start_udp_multicast_server,
 )
-
-# File Transfer
 from .file_transfer import (
     send_file,
     start_file_server,
     send_file_async,
     start_file_server_async,
 )
-
-# JSON Socket
 from .json_socket import (
     start_json_server,
     send_json,
@@ -72,12 +66,8 @@ from .json_socket import (
     send_json_response,
     send_json_response_async,
 )
-
-# Utilities & Errors
-from . import utils
-from . import errors
-
-# Live Stream
+from .utils import *
+from .errors import *
 from .live_stream import start_live_stream, connect_to_live_server
 from .websocket import (
     start_websocket_server,
@@ -88,10 +78,6 @@ from .websocket import (
 from .http import http_get, http_post, https_get, https_post, start_http_server
 from .pubsub import start_pubsub_server, PubSubClient
 from .rpc import start_rpc_server, RPCClient
-
-# Video Chat
 from .video_chat import VideoChatServer, VideoChatClient
-
 from .compression import compress_data, decompress_data, detect_compression
-
 from .interactive_cli import KnSockInteractiveCLI

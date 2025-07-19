@@ -3,7 +3,6 @@
 import os
 import socket
 import asyncio
-from typing import Optional
 
 CHUNK_SIZE = 4096
 

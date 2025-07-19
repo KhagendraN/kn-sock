@@ -76,7 +76,7 @@ def https_get(
     port: int = 443,
     path: str = "/",
     headers: Optional[Dict[str, str]] = None,
-    cafile: str = None,
+    cafile: Optional[str] = None,
 ) -> str:
     """
     Perform a simple HTTPS GET request.
@@ -118,7 +118,7 @@ def https_post(
     path: str = "/",
     data: str = "",
     headers: Optional[Dict[str, str]] = None,
-    cafile: str = None,
+    cafile: Optional[str] = None,
 ) -> str:
     """
     Perform a simple HTTPS POST request.

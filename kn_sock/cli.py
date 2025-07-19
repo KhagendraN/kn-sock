@@ -3,6 +3,8 @@
 import argparse
 import sys
 import logging
+
+logger = logging.getLogger("kn_sock.cli")
 from kn_sock.tcp import (
     send_tcp_message,
     start_tcp_server,
@@ -36,7 +38,6 @@ def run_cli():
     logging.basicConfig(
         level=logging.INFO, format="[%(levelname)s][%(name)s] %(message)s", force=True
     )
-    logger = logging.getLogger(__name__)
     parser = argparse.ArgumentParser(description="kn_sock: Simplified socket utilities")
 
     subparsers = parser.add_subparsers(dest="command", help="Sub-command help")

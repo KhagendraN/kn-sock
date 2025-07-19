@@ -127,7 +127,7 @@ class PubSubClient:
     def publish(self, topic: str, message: str):
         self._send({"action": "publish", "topic": topic, "message": message})
 
-    def recv(self, timeout: float = None) -> Optional[dict]:
+    def recv(self, timeout: Optional[float] = None) -> Optional[dict]:
         self.sock.settimeout(timeout)
         while True:
             if b"\n" in self.recv_buffer:

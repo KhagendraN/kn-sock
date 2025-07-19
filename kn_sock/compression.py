@@ -12,7 +12,6 @@ Supported methods: 'gzip', 'deflate'.
 """
 import gzip
 import zlib
-from typing import Union
 
 
 def compress_data(data: bytes, method: str = "gzip") -> bytes:

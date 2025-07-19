@@ -4,7 +4,7 @@ import socket
 import threading
 import asyncio
 import logging
-from typing import Callable, Awaitable
+from typing import Callable, Awaitable, Optional
 import ssl
 import queue
 import time
@@ -30,7 +30,7 @@ def start_tcp_server(
     port: int,
     handler_func: Callable[[bytes, tuple, socket.socket], None],
     host: str = "0.0.0.0",
-    shutdown_event=None,
+    shutdown_event: Optional[threading.Event] = None,
 ):
     """
     Starts a synchronous TCP server (IPv4/IPv6 supported).
@@ -72,7 +72,7 @@ def start_threaded_tcp_server(
     port: int,
     handler_func: Callable[[bytes, tuple, socket.socket], None],
     host: str = "0.0.0.0",
-    shutdown_event=None,
+    shutdown_event: Optional[threading.Event] = None,
 ):
     """
     Starts a threaded TCP server (IPv4/IPv6 supported).
@@ -164,7 +164,7 @@ async def start_async_tcp_server(
     port: int,
     handler_func: Callable[[bytes, tuple, asyncio.StreamWriter], Awaitable[None]],
     host: str = "0.0.0.0",
-    shutdown_event: "asyncio.Event" = None,
+    shutdown_event: Optional["asyncio.Event"] = None,
 ):
     """
     Starts an asynchronous TCP server with graceful shutdown support.
@@ -228,7 +228,7 @@ def start_ssl_tcp_server(
     cafile=None,
     require_client_cert=False,
     host="0.0.0.0",
-    shutdown_event=None,
+    shutdown_event: Optional[threading.Event] = None,
 ):
     """
     Starts a synchronous SSL/TLS TCP server with graceful shutdown support.
@@ -318,7 +318,7 @@ async def start_async_ssl_tcp_server(
     cafile=None,
     require_client_cert=False,
     host="0.0.0.0",
-    shutdown_event=None,
+    shutdown_event: Optional["asyncio.Event"] = None,
 ):
     """
     Starts an asynchronous SSL/TLS TCP server with graceful shutdown support.

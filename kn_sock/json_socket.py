@@ -1,7 +1,6 @@
 # kn_sock/json_socket.py
 
 import socket
-import threading
 import asyncio
 import json
 from typing import Callable, Awaitable, Optional

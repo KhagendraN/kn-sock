@@ -128,7 +128,7 @@ def start_websocket_server(
 
 
 def connect_websocket(
-    host: str, port: int, resource: str = "/", headers: dict = None
+    host: str, port: int, resource: str = "/", headers: Optional[dict] = None
 ) -> WebSocketConnection:
     """
     Connect to a WebSocket server and return a WebSocketConnection.

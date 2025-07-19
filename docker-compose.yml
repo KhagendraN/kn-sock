@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  knsock:
+    build: .
+    image: knsock:latest
+    command: ["--help"]
+    volumes:
+      - .:/app
+  test:
+    build: .
+    image: knsock:latest
+    command: ["pytest", "test/"]
+    volumes:
+      - .:/app

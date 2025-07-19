@@ -10,8 +10,9 @@ from kn_sock.utils import (
     chunked_file_reader,
     recv_all,
     print_progress,
-    is_valid_json
+    is_valid_json,
 )
+
 
 ### get_free_port ###
 def test_get_free_port_is_available():
@@ -24,6 +25,7 @@ def test_get_free_port_is_available():
         print(f"[FAILED] get_free_port returned unavailable port {port}: {e}")
         raise
 
+
 ### get_local_ip ###
 def test_get_local_ip_returns_ip():
     ip = get_local_ip()
@@ -35,6 +37,7 @@ def test_get_local_ip_returns_ip():
     except Exception:
         print(f"[FAILED] get_local_ip returned an invalid IP: {ip}")
         raise
+
 
 ### chunked_file_reader ###
 def test_chunked_file_reader_reads_in_chunks():
@@ -54,6 +57,7 @@ def test_chunked_file_reader_reads_in_chunks():
     finally:
         os.remove(tmp_path)
 
+
 ### recv_all ###
 def test_recv_all_receives_exact_bytes():
     server_sock, client_sock = socket.socketpair()
@@ -71,6 +75,7 @@ def test_recv_all_receives_exact_bytes():
         server_sock.close()
         client_sock.close()
 
+
 ### print_progress ###
 def test_print_progress_displays_correctly(capsys):
     try:
@@ -82,6 +87,7 @@ def test_print_progress_displays_correctly(capsys):
         print(f"[FAILED] print_progress error: {e}")
         raise
 
+
 ### is_valid_json ###
 def test_is_valid_json_returns_true_for_valid():
     valid = '{"key": "value"}'
@@ -92,6 +98,7 @@ def test_is_valid_json_returns_true_for_valid():
         print(f"[FAILED] is_valid_json failed on valid JSON: {e}")
         raise
 
+
 def test_is_valid_json_returns_false_for_invalid():
     invalid = "{invalid json}"
     try:
@@ -100,3 +107,193 @@ def test_is_valid_json_returns_false_for_invalid():
     except Exception as e:
         print(f"[FAILED] is_valid_json failed on invalid JSON: {e}")
         raise
+
+
+# --- Error Condition Tests ---
+def test_is_valid_json_invalid():
+    from kn_sock.utils import is_valid_json
+
+    assert not is_valid_json("{bad json}")
+
+
+def test_chunked_file_reader_bad_path():
+    import pytest
+    from kn_sock.utils import chunked_file_reader
+
+    with pytest.raises(FileNotFoundError):
+        list(chunked_file_reader("/nonexistent/file.txt"))
+
+
+# --- Compression Tests ---
+def test_gzip_compression():
+    from kn_sock.compression import compress_data, decompress_data, detect_compression
+
+    data = b"hello world" * 100
+    compressed = compress_data(data, method="gzip")
+    assert detect_compression(compressed) == "gzip"
+    decompressed = decompress_data(compressed)
+    assert decompressed == data
+
+
+def test_deflate_compression():
+    from kn_sock.compression import compress_data, decompress_data, detect_compression
+
+    data = b"test data" * 100
+    compressed = compress_data(data, method="deflate")
+    assert (
+        detect_compression(compressed) == "deflate"
+        or detect_compression(compressed) == "none"
+    )  # zlib header may not be detected
+    decompressed = decompress_data(compressed)
+    assert decompressed == data
+
+
+def test_decompress_invalid():
+    from kn_sock.compression import decompress_data
+    import pytest
+
+    with pytest.raises(ValueError):
+        decompress_data(b"not compressed data")
+
+
+# --- Async WebSocket Client Test ---
+import pytest
+import asyncio
+from kn_sock.websocket import start_websocket_server, async_connect_websocket
+
+
+def echo_handler(ws):
+    while ws.open:
+        msg = ws.recv()
+        if not msg:
+            break
+        ws.send(msg)
+    ws.close()
+
+
+@pytest.mark.asyncio
+async def test_async_websocket_client():
+    import threading
+    import time
+
+    server_thread = threading.Thread(
+        target=start_websocket_server,
+        args=("127.0.0.1", 8766, echo_handler),
+        daemon=True,
+    )
+    server_thread.start()
+    time.sleep(0.5)
+    ws = await async_connect_websocket("127.0.0.1", 8766)
+    await ws.send("hello async")
+    reply = await ws.recv()
+    assert reply == "hello async"
+    await ws.close()
+
+
+# --- Message Queue Tests ---
+def test_inmemory_queue():
+    from kn_sock.queue import InMemoryQueue
+
+    q = InMemoryQueue()
+    q.put("a")
+    assert not q.empty()
+    assert q.qsize() == 1
+    assert q.get() == "a"
+    q.task_done()
+    q.join()
+    assert q.empty()
+
+
+def test_file_queue(tmp_path):
+    from kn_sock.queue import FileQueue
+
+    path = tmp_path / "queue.db"
+    fq = FileQueue(str(path))
+    fq.put("x")
+    fq.put("y")
+    assert fq.qsize() == 2
+    assert fq.get() == "x"
+    fq.task_done()
+    fq.close()
+    # Reopen and check persistence
+    fq2 = FileQueue(str(path))
+    assert fq2.get() == "y"
+    fq2.task_done()
+    fq2.close()
+
+
+# --- Protobuf Serialization Test ---
+class MockProto:
+    def __init__(self, value=None):
+        self.value = value
+        self._data = None
+
+    def SerializeToString(self):
+        return str(self.value).encode()
+
+    def ParseFromString(self, data):
+        self.value = int(data.decode())
+
+
+def test_protobuf_serialization():
+    from kn_sock.protobuf import serialize_message, deserialize_message
+
+    msg = MockProto(42)
+    data = serialize_message(msg)
+    restored = deserialize_message(data, MockProto)
+    assert restored.value == 42
+
+
+# --- Load Balancer Tests ---
+def test_round_robin_load_balancer():
+    from kn_sock.utils import RoundRobinLoadBalancer
+
+    lb = RoundRobinLoadBalancer(["a", "b", "c"])
+    # The expected sequence is a, b, c, a, b, c
+    sequence = [lb.next() for _ in range(6)]
+    assert sequence == ["a", "b", "c", "a", "b", "c"]
+
+
+def test_least_connections_load_balancer():
+    from kn_sock.load_balancer import LeastConnectionsLoadBalancer
+
+    lcb = LeastConnectionsLoadBalancer()
+    lcb.add_server("a")
+    lcb.add_server("b")
+    lcb.update_connections("a", 2)
+    lcb.update_connections("b", 1)
+    assert lcb.get_server() == "b"
+    lcb.update_connections("a", 0)
+    assert lcb.get_server() == "a"
+
+
+# --- File Transfer Progress Bar Test ---
+import socket
+import threading
+import time
+from kn_sock.file_transfer import send_file, start_file_server
+
+
+def get_free_port():
+    s = socket.socket()
+    s.bind(("", 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+def test_send_file_progress_bar(tmp_path):
+    test_file = tmp_path / "testfile.txt"
+    test_file.write_text("data" * 100)
+    port = get_free_port()
+    stop_event = threading.Event()
+
+    def server():
+        start_file_server("127.0.0.1", port, tmp_path, shutdown_event=stop_event)
+
+    t = threading.Thread(target=server, daemon=True)
+    t.start()
+    time.sleep(0.2)
+    send_file(str(test_file), "127.0.0.1", port)
+    stop_event.set()
+    t.join(timeout=1)

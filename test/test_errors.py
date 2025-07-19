@@ -9,6 +9,7 @@ from kn_sock.errors import (
     FileTransferError,
 )
 
+
 ### EasySocketError ###
 def test_easy_socket_error():
     try:
@@ -17,6 +18,7 @@ def test_easy_socket_error():
         assert isinstance(e, EasySocketError)
         assert str(e) == "General socket error"
         print("[SUCCESS] EasySocketError raised and caught successfully.")
+
 
 ### ConnectionTimeoutError ###
 def test_connection_timeout_error():
@@ -27,6 +29,7 @@ def test_connection_timeout_error():
         assert str(e) == "Connection timed out"
         print("[SUCCESS] ConnectionTimeoutError raised and caught successfully.")
 
+
 ### PortInUseError ###
 def test_port_in_use_error():
     try:
@@ -36,6 +39,7 @@ def test_port_in_use_error():
         assert str(e) == "Port 5000 is already in use."
         print("[SUCCESS] PortInUseError raised and caught successfully.")
 
+
 ### UnsupportedProtocolError ###
 def test_unsupported_protocol_error():
     try:
@@ -44,6 +48,7 @@ def test_unsupported_protocol_error():
         assert isinstance(e, UnsupportedProtocolError)
         assert str(e) == "Protocol 'XYZ' is not supported."
         print("[SUCCESS] UnsupportedProtocolError raised and caught successfully.")
+
 
 ### InvalidJSONError ###
 def test_invalid_json_error():

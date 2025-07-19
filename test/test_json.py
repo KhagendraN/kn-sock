@@ -5,6 +5,7 @@ import json
 import pytest
 from kn_sock import send_json
 
+
 # This is a helper to run a *single-connection* JSON server for testing
 def run_single_connection_json_server(port, handler, stop_event):
     """
@@ -13,7 +14,7 @@ def run_single_connection_json_server(port, handler, stop_event):
     """
     srv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv_sock.bind(('0.0.0.0', port))
+    srv_sock.bind(("0.0.0.0", port))
     srv_sock.listen(1)
     srv_sock.settimeout(1)  # 1 second timeout to periodically check stop_event
 
@@ -46,14 +47,14 @@ def test_handle_json_message_and_server():
     stop_event = threading.Event()
 
     def test_handler(data, addr, client_socket):
-        received_data['data'] = data
-        received_data['addr'] = addr
+        received_data["data"] = data
+        received_data["addr"] = addr
         client_socket.sendall(b'{"status": "received"}')
 
     server_thread = threading.Thread(
         target=run_single_connection_json_server,
         args=(9090, test_handler, stop_event),
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
 
@@ -71,15 +72,15 @@ def test_handle_json_message_and_server():
     server_thread.join(timeout=1)
 
     # Assert server received correct data
-    assert 'data' in received_data, "Server handler did not receive any data."
-    assert received_data['data'] == test_message, (
-        f"Server received incorrect data: expected {test_message}, got {received_data['data']}"
-    )
-    assert 'addr' in received_data, "Server handler did not capture client address."
+    assert "data" in received_data, "Server handler did not receive any data."
+    assert (
+        received_data["data"] == test_message
+    ), f"Server received incorrect data: expected {test_message}, got {received_data['data']}"
+    assert "addr" in received_data, "Server handler did not capture client address."
 
     assert isinstance(response, dict), f"Response is not a dict: {response}"
-    assert response == {"status": "received"}, (
-        f"Unexpected response from server: expected {{'status': 'received'}}, got {response}"
-    )
+    assert response == {
+        "status": "received"
+    }, f"Unexpected response from server: expected {{'status': 'received'}}, got {response}"
 
     print("[TEST PASSED] JSON server received and responded correctly.")

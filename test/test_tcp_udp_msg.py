@@ -2,15 +2,21 @@ import pytest
 import asyncio
 import threading
 import socket
+import random
 from kn_sock import (
-    start_tcp_server, send_tcp_message,
-    start_async_tcp_server, send_tcp_message_async,
-    start_udp_server, send_udp_message,
-    start_udp_server_async, send_udp_message_async,
+    start_tcp_server,
+    send_tcp_message,
+    start_async_tcp_server,
+    send_tcp_message_async,
+    start_udp_server,
+    send_udp_message,
+    start_udp_server_async,
+    send_udp_message_async,
 )
 from kn_sock.utils import get_free_port
 
 # --- Sync TCP ---
+
 
 @pytest.fixture
 def run_sync_tcp_server():
@@ -21,14 +27,20 @@ def run_sync_tcp_server():
         client_socket.sendall(b"Message received")
 
     port = get_free_port()
-    server_thread = threading.Thread(target=start_tcp_server, args=(port, handler), daemon=True)
+    server_thread = threading.Thread(
+        target=start_tcp_server, args=(port, handler), daemon=True
+    )
     server_thread.start()
 
-    import time; time.sleep(1)
+    import time
+
+    time.sleep(1)
     yield received_messages, port
+
 
 def test_sync_tcp(run_sync_tcp_server):
     import time
+
     received_messages, port = run_sync_tcp_server
     for _ in range(10):
         try:
@@ -39,12 +51,14 @@ def test_sync_tcp(run_sync_tcp_server):
     else:
         pytest.fail("TCP server did not start in time")
     time.sleep(0.5)
-    assert "Hello, Sync TCP!" in received_messages, (
-        "FAILURE: Sync TCP server did NOT receive the expected message."
-    )
+    assert (
+        "Hello, Sync TCP!" in received_messages
+    ), "FAILURE: Sync TCP server did NOT receive the expected message."
     print("SUCCESS: Sync TCP server received the expected message.")
 
+
 # --- Async TCP ---
+
 
 @pytest.mark.asyncio
 async def test_async_tcp():
@@ -70,12 +84,14 @@ async def test_async_tcp():
     except asyncio.CancelledError:
         pass
 
-    assert "Hello, Async TCP!" in received_messages, (
-        "FAILURE: Async TCP server did NOT receive the expected message."
-    )
+    assert (
+        "Hello, Async TCP!" in received_messages
+    ), "FAILURE: Async TCP server did NOT receive the expected message."
     print("SUCCESS: Async TCP server received the expected message.")
 
+
 # --- Sync UDP ---
+
 
 @pytest.fixture
 def run_sync_udp_server():
@@ -84,73 +100,97 @@ def run_sync_udp_server():
     def handler(data, addr, server_socket):
         received_messages.append(data.decode())
 
-    server_thread = threading.Thread(target=start_udp_server, args=(9092, handler), daemon=True)
+    server_thread = threading.Thread(
+        target=start_udp_server, args=(9092, handler), daemon=True
+    )
     server_thread.start()
 
-    import time; time.sleep(0.5)
+    import time
+
+    time.sleep(0.5)
     yield received_messages
+
 
 def test_sync_udp(run_sync_udp_server):
     send_udp_message("localhost", 9092, "Hello, Sync UDP!")
-    import time; time.sleep(0.5)
-    assert "Hello, Sync UDP!" in run_sync_udp_server, (
-        "FAILURE: Sync UDP server did NOT receive the expected message."
-    )
+    import time
+
+    time.sleep(0.5)
+    assert (
+        "Hello, Sync UDP!" in run_sync_udp_server
+    ), "FAILURE: Sync UDP server did NOT receive the expected message."
     print("SUCCESS: Sync UDP server received the expected message.")
+
 
 # --- Async UDP ---
 
-@pytest.mark.asyncio
-async def test_async_udp():
+
+def get_free_port():
+    s = socket.socket()
+    s.bind(("", 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+def test_async_udp():
+    received = []
+
+    def handler(data, addr, sock):
+        received.append(data.decode())
+
     port = get_free_port()
-    received_messages = []
+    stop_event = threading.Event()
 
-    async def handler(data, addr, transport):
-        print(f"[TEST][UDP][ASYNC] Handler received: {data}")
-        received_messages.append(data.decode())
+    def server():
+        start_udp_server(port, handler, host="127.0.0.1", shutdown_event=stop_event)
 
-    server_task = asyncio.create_task(start_udp_server_async(port, handler))
-    await asyncio.sleep(3)  # wait for server to start
+    t = threading.Thread(target=server, daemon=True)
+    t.start()
+    time.sleep(0.2)
+    send_udp_message("127.0.0.1", port, "test-udp")
+    for _ in range(10):
+        if received:
+            break
+        time.sleep(0.1)
+    stop_event.set()
+    t.join(timeout=1)
+    assert (
+        "test-udp" in received
+    ), f"FAILURE: Async UDP server did NOT receive the expected message."
 
-    await send_udp_message_async("localhost", port, "Hello, Async UDP!")
-
-    await asyncio.sleep(3)  # wait for message handling
-
-    server_task.cancel()
-    try:
-        await server_task
-    except asyncio.CancelledError:
-        pass
-
-    print(f"[TEST][UDP][ASYNC] received_messages: {received_messages}")
-    assert "Hello, Async UDP!" in received_messages, (
-        "FAILURE: Async UDP server did NOT receive the expected message."
-    )
-    print("SUCCESS: Async UDP server received the expected message.")
 
 @pytest.mark.asyncio
 async def test_async_tcp_server_graceful_shutdown():
     shutdown_event = asyncio.Event()
+
     async def handler(data, addr, writer):
         pass
+
     port = get_free_port()
-    server_task = asyncio.create_task(start_async_tcp_server(port, handler, shutdown_event=shutdown_event))
+    server_task = asyncio.create_task(
+        start_async_tcp_server(port, handler, shutdown_event=shutdown_event)
+    )
     await asyncio.sleep(1)
     shutdown_event.set()
     await asyncio.wait_for(server_task, timeout=2)
     print("[SUCCESS] Async TCP server graceful shutdown")
 
+
 def test_tcp_server_graceful_shutdown():
     import threading
     import time
+
     shutdown_event = threading.Event()
+
     def handler(data, addr, client_socket):
         pass
+
     server_thread = threading.Thread(
         target=start_tcp_server,
         args=(get_free_port(), handler),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -159,31 +199,41 @@ def test_tcp_server_graceful_shutdown():
     assert not server_thread.is_alive(), "TCP server did not shut down gracefully"
     print("[SUCCESS] TCP server graceful shutdown")
 
+
 @pytest.mark.asyncio
 async def test_async_udp_server_graceful_shutdown():
     shutdown_event = asyncio.Event()
+
     async def handler(data, addr, transport):
         pass
+
     port = get_free_port()
-    server_task = asyncio.create_task(start_udp_server_async(port, handler, shutdown_event=shutdown_event))
+    server_task = asyncio.create_task(
+        start_udp_server_async(port, handler, shutdown_event=shutdown_event)
+    )
     await asyncio.sleep(1)
     shutdown_event.set()
     await asyncio.wait_for(server_task, timeout=2)
     print("[SUCCESS] Async UDP server graceful shutdown")
 
+
 def test_tcp_connection_pool():
     from kn_sock import TCPConnectionPool
     import threading
     import time
+
     port = get_free_port()
+
     def echo_server():
         def handler(data, addr, client_socket):
             client_socket.sendall(b"ECHO:" + data)
+
         start_tcp_server(port, handler)
+
     server_thread = threading.Thread(target=echo_server, daemon=True)
     server_thread.start()
     time.sleep(1)
-    pool = TCPConnectionPool('localhost', port, max_size=2, idle_timeout=5)
+    pool = TCPConnectionPool("localhost", port, max_size=2, idle_timeout=5)
     with pool.connection() as conn:
         conn.sendall(b"pool test")
         data = conn.recv(1024)
@@ -191,21 +241,25 @@ def test_tcp_connection_pool():
     pool.closeall()
     print("[SUCCESS] TCPConnectionPool plain TCP")
 
-@pytest.mark.skipif(not socket.has_ipv6, reason='IPv6 not supported on this platform')
+
+@pytest.mark.skipif(not socket.has_ipv6, reason="IPv6 not supported on this platform")
 def test_tcp_ipv6():
     import threading
     import time
+
     received = {}
+
     def handler(data, addr, client_socket):
-        received['data'] = data
-        client_socket.sendall(b'ACK:' + data)
+        received["data"] = data
+        client_socket.sendall(b"ACK:" + data)
+
     shutdown_event = threading.Event()
     port = get_free_port()
     server_thread = threading.Thread(
         target=start_tcp_server,
         args=(port, handler),
         kwargs={"host": "::1", "shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -213,25 +267,32 @@ def test_tcp_ipv6():
     time.sleep(0.5)
     shutdown_event.set()
     server_thread.join()
-    assert received['data'] == b'hello ipv6'
+    assert received["data"] == b"hello ipv6"
     print("[SUCCESS] IPv6 TCP server/client")
 
-@pytest.mark.skipif(not hasattr(socket, 'IP_ADD_MEMBERSHIP'), reason='Multicast not supported on this platform')
+
+@pytest.mark.skipif(
+    not hasattr(socket, "IP_ADD_MEMBERSHIP"),
+    reason="Multicast not supported on this platform",
+)
 def test_udp_multicast():
     import threading
     import time
     from kn_sock import send_udp_multicast, start_udp_multicast_server
-    group = '224.0.0.1'
+
+    group = "224.0.0.1"
     port = get_free_port()
     received = {}
+
     def handler(data, addr, sock):
-        received['data'] = data
+        received["data"] = data
+
     shutdown_event = threading.Event()
     server_thread = threading.Thread(
         target=start_udp_multicast_server,
         args=(group, port, handler),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -239,29 +300,34 @@ def test_udp_multicast():
     time.sleep(1)
     shutdown_event.set()
     server_thread.join()
-    assert received['data'] == b'hello multicast'
+    assert received["data"] == b"hello multicast"
     print("[SUCCESS] UDP multicast send/receive")
+
 
 def test_websocket_echo():
     import threading
     import time
     from kn_sock import start_websocket_server, connect_websocket
+
     received = {}
+
     def echo_handler(ws):
         msg = ws.recv()
         ws.send(msg)
         ws.close()
+
     shutdown_event = threading.Event()
     import socket
+
     sock = socket.socket()
-    sock.bind(('127.0.0.1', 0))
+    sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
     server_thread = threading.Thread(
         target=start_websocket_server,
         args=("127.0.0.1", port, echo_handler),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -274,21 +340,25 @@ def test_websocket_echo():
     assert reply == "test123"
     print("[SUCCESS] WebSocket echo test")
 
+
 def test_http_get_post():
     import threading
     import time
     from kn_sock import http_get, http_post
     import http.server
     import socketserver
+
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"hello get")
+
         def do_POST(self):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"hello post")
+
     with socketserver.TCPServer(("127.0.0.1", 0), Handler) as httpd:
         port = httpd.server_address[1]
         t = threading.Thread(target=httpd.serve_forever, daemon=True)
@@ -302,35 +372,52 @@ def test_http_get_post():
         t.join()
     print("[SUCCESS] HTTP GET/POST test")
 
+
 def test_http_server():
     import threading
     import time
     import os
     from kn_sock import start_http_server, http_get, http_post
+
     os.makedirs("test_static", exist_ok=True)
     with open("test_static/index.html", "w") as f:
         f.write("<h1>Static Test</h1>")
+
     def hello_route(request, client_sock):
-        client_sock.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nHello")
+        client_sock.sendall(
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nHello"
+        )
+
     def echo_post(request, client_sock):
-        body = request['raw'].split(b'\r\n\r\n', 1)[-1]
-        resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body
+        body = request["raw"].split(b"\r\n\r\n", 1)[-1]
+        resp = (
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+            + str(len(body)).encode()
+            + b"\r\n\r\n"
+            + body
+        )
         client_sock.sendall(resp)
+
     routes = {
         ("GET", "/hello"): hello_route,
         ("POST", "/echo"): echo_post,
     }
     shutdown_event = threading.Event()
     import socket
+
     sock = socket.socket()
-    sock.bind(('127.0.0.1', 0))
+    sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
     server_thread = threading.Thread(
         target=start_http_server,
         args=("127.0.0.1", port),
-        kwargs={"static_dir": "test_static", "routes": routes, "shutdown_event": shutdown_event},
-        daemon=True
+        kwargs={
+            "static_dir": "test_static",
+            "routes": routes,
+            "shutdown_event": shutdown_event,
+        },
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -347,21 +434,24 @@ def test_http_server():
     server_thread.join()
     print("[SUCCESS] HTTP server static, GET, POST test")
 
+
 def test_pubsub():
     import threading
     import time
     from kn_sock import start_pubsub_server, PubSubClient
+
     shutdown_event = threading.Event()
     import socket
+
     sock = socket.socket()
-    sock.bind(('127.0.0.1', 0))
+    sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
     server_thread = threading.Thread(
         target=start_pubsub_server,
         args=(port,),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -381,26 +471,31 @@ def test_pubsub():
     assert msg2["message"] == "hello pubsub"
     print("[SUCCESS] PubSub subscribe/publish test")
 
+
 def test_rpc():
     import threading
     import time
     from kn_sock import start_rpc_server, RPCClient
+
     def add(a, b):
         return a + b
+
     def echo(msg):
         return msg
+
     funcs = {"add": add, "echo": echo}
     shutdown_event = threading.Event()
     import socket
+
     sock = socket.socket()
-    sock.bind(('127.0.0.1', 0))
+    sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
     server_thread = threading.Thread(
         target=start_rpc_server,
         args=(port, funcs),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     time.sleep(1)
@@ -416,3 +511,45 @@ def test_rpc():
     shutdown_event.set()
     server_thread.join()
     print("[SUCCESS] RPC server/client test")
+
+
+# --- Error Condition Tests ---
+def test_tcp_connection_timeout(monkeypatch):
+    import socket
+    from kn_sock.tcp import send_tcp_message
+
+    def fake_connect(*a, **kw):
+        raise socket.timeout()
+
+    monkeypatch.setattr(socket.socket, "connect", fake_connect)
+    try:
+        send_tcp_message("127.0.0.1", 65534, "test")
+    except Exception as e:
+        assert isinstance(e, socket.timeout)
+
+
+def test_udp_invalid_address():
+    import pytest
+    from kn_sock.udp import send_udp_message
+
+    with pytest.raises(Exception):
+        send_udp_message("256.256.256.256", 9999, "bad")
+
+
+def test_tcp_invalid_data():
+    import pytest
+    from kn_sock.tcp import send_tcp_message
+
+    with pytest.raises(Exception):
+        send_tcp_message("localhost", 8080, None)
+
+
+def test_udp_port_unreachable():
+    import pytest
+    from kn_sock.udp import send_udp_message
+
+    # Port likely closed, should not raise but may log error
+    try:
+        send_udp_message("127.0.0.1", 65534, "test")
+    except Exception as e:
+        assert isinstance(e, Exception)

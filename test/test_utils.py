@@ -246,11 +246,13 @@ def test_protobuf_serialization():
 
 # --- Load Balancer Tests ---
 def test_round_robin_load_balancer():
-    from kn_sock.utils import RoundRobinLoadBalancer
+    from kn_sock.load_balancer import RoundRobinLoadBalancer
 
-    lb = RoundRobinLoadBalancer(["a", "b", "c"])
+    lb = RoundRobinLoadBalancer()
+    for s in ["a", "b", "c"]:
+        lb.add_server(s)
     # The expected sequence is a, b, c, a, b, c
-    sequence = [lb.next() for _ in range(6)]
+    sequence = [lb.get_server() for _ in range(6)]
     assert sequence == ["a", "b", "c", "a", "b", "c"]
 
 
@@ -287,13 +289,37 @@ def test_send_file_progress_bar(tmp_path):
     test_file.write_text("data" * 100)
     port = get_free_port()
     stop_event = threading.Event()
+    ready_event = threading.Event()
 
     def server():
-        start_file_server("127.0.0.1", port, tmp_path, shutdown_event=stop_event)
+        # Start the server and signal when ready
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind(("127.0.0.1", port))
+        server_socket.listen(5)
+        ready_event.set()
+        while not stop_event.is_set():
+            server_socket.settimeout(0.2)
+            try:
+                conn, addr = server_socket.accept()
+            except socket.timeout:
+                continue
+            with conn:
+                filename = conn.recv(1024).decode().strip()
+                filesize = int(conn.recv(1024).decode().strip())
+                save_path = tmp_path / filename
+                with open(save_path, "wb") as f:
+                    remaining = filesize
+                    while remaining > 0:
+                        data = conn.recv(min(4096, remaining))
+                        if not data:
+                            break
+                        f.write(data)
+                        remaining -= len(data)
+        server_socket.close()
 
     t = threading.Thread(target=server, daemon=True)
     t.start()
-    time.sleep(0.2)
-    send_file(str(test_file), "127.0.0.1", port)
+    ready_event.wait(timeout=2)  # Wait for server to be ready
+    send_file("127.0.0.1", port, str(test_file))
     stop_event.set()
     t.join(timeout=1)

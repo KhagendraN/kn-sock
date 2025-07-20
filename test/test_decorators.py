@@ -34,7 +34,7 @@ def test_log_exceptions_no_raise():
     handler.flush()
     output = log_stream.getvalue()
     logger.removeHandler(handler)
-    assert "[ERROR]" in output
+    assert "Exception in 'fail': fail!" in output
 
 
 def test_retry_retries(monkeypatch):

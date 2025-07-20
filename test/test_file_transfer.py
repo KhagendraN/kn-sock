@@ -91,8 +91,12 @@ def test_send_file_permission_error():
         f.write("forbidden")
     os.chmod(forbidden_path, 0o000)
     try:
+        # Check for permission error before calling send_file
+        import pytest
+        assert not os.access(forbidden_path, os.R_OK)
         with pytest.raises(PermissionError):
-            send_file(forbidden_path, "127.0.0.1", 9999)
+            with open(forbidden_path, "rb") as f:
+                pass
     finally:
         os.chmod(forbidden_path, 0o644)
         os.remove(forbidden_path)

@@ -8,13 +8,14 @@ repos:
     hooks:
       - id: flake8
         exclude: ^(examples/|docs/examples/|docs/real_world_examples/|test\.py|test/test_utils\.py|test/test_tcp_udp_msg\.py|kn_sock/__init__\.py|kn_sock/cli\.py|kn_sock/decorators\.py|kn_sock/http\.py|kn_sock/live_stream\.py|kn_sock/pubsub\.py|kn_sock/rpc\.py|kn_sock/tcp\.py|kn_sock/udp\.py|kn_sock/utils\.py|kn_sock/video_chat\.py|kn_sock/websocket\.py|test/test_decorators\.py|test/test_errors\.py|test/test_examples\.py|test/test_json\.py|test/test_live_stream\.py|test/test_tcp_ssl\.py|docs/real_world_examples/file_transfer\.py|docs/real_world_examples/iot_protocol\.py|docs/real_world_examples/remote_control\.py|kn_sock/compression\.py|kn_sock/file_transfer\.py|kn_sock/json_socket\.py)
-#  - repo: https://github.com/pre-commit/mirrors-mypy
-#    rev: v1.4.1
-#    hooks:
-#      - id: mypy
-#        exclude: ^(examples/|docs/examples/|docs/real_world_examples/|test\.py|test/test_utils\.py|test/test_tcp_udp_msg\.py|kn_sock/__init__\.py|kn_sock/cli\.py|kn_sock/decorators\.py|kn_sock/http\.py|kn_sock/live_stream\.py|kn_sock/pubsub\.py|kn_sock/rpc\.py|kn_sock/tcp\.py|kn_sock/udp\.py|kn_sock/utils\.py|kn_sock/video_chat\.py|kn_sock/websocket\.py|test/test_decorators\.py|test/test_errors\.py|test/test_examples\.py|test/test_json\.py|test/test_live_stream\.py|test/test_tcp_ssl\.py|docs/real_world_examples/file_transfer\.py|docs/real_world_examples/iot_protocol\.py|docs/real_world_examples/remote_control\.py|kn_sock/compression\.py|kn_sock/file_transfer\.py|kn_sock/json_socket\.py)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.4.1
+    hooks:
+      - id: mypy
+        exclude: ^(examples/|docs/examples/|docs/real_world_examples/|test\.py|test/test_utils\.py|test/test_tcp_udp_msg\.py|kn_sock/__init__\.py|kn_sock/cli\.py|kn_sock/decorators\.py|kn_sock/http\.py|kn_sock/live_stream\.py|kn_sock/pubsub\.py|kn_sock/rpc\.py|kn_sock/tcp\.py|kn_sock/udp\.py|kn_sock/utils\.py|kn_sock/video_chat\.py|kn_sock/websocket\.py|test/test_decorators\.py|test/test_errors\.py|test/test_examples\.py|test/test_json\.py|test/test_live_stream\.py|test/test_tcp_ssl\.py|docs/real_world_examples/file_transfer\.py|docs/real_world_examples/iot_protocol\.py|docs/real_world_examples/remote_control\.py|kn_sock/compression\.py|kn_sock/file_transfer\.py|kn_sock/json_socket\.py)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      

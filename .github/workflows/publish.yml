@@ -26,5 +26,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, 'a')
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }} # add to github
         run: twine upload --repository testpypi dist/* 

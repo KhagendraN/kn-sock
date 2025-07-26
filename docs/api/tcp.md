@@ -124,3 +124,28 @@ docker-compose run --rm knsock send-tcp 172.18.0.2 8080 "Hello TCP"
 If you see the following in your client terminal, the test passes:
 
 `[TCP] Server response: Echo: Hello TCP`
+
+## Python API Reference
+
+## API Quickstart
+
+    ... Short how-to code blocks for common usage ...
+
+## TCP Server APIs
+
+::: kn_sock.tcp.start_tcp_server
+::: kn_sock.tcp.start_threaded_tcp_server
+
+## TCP Client APIs
+
+::: kn_sock.tcp.send_tcp_message
+::: kn_sock.tcp.send_tcp_bytes
+
+## Async APIs
+
+::: kn_sock.tcp.start_async_tcp_server
+::: kn_sock.tcp.send_tcp_message_async
+
+## Connection Pools
+
+::: kn_sock.tcp.TCPConnectionPool

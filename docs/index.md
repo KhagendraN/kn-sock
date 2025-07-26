@@ -323,6 +323,20 @@ asyncio.run(start_file_server_async(8080, "/path/to/save/directory"))
 asyncio.run(send_file_async("localhost", 8080, "path/to/your/file.txt"))
 ```
 
+### File Transfer Progress Bars
+
+All file transfer functions in kn_sock support progress bars using tqdm. By default, a progress bar is shown if tqdm is installed.
+
+- To disable, pass `show_progress=False` to any file transfer function.
+- Progress bars show bytes transferred, speed, and ETA.
+
+Example:
+
+```python
+from kn_sock import send_file
+send_file('localhost', 8080, 'file.txt', show_progress=True)
+```
+
 ## Live Video/Audio Streaming (Multi-Video Selection)
 
 The `kn_sock` library supports live video and audio streaming from one or more video files to multiple clients, with adaptive bitrate and smooth playback.
@@ -470,6 +484,33 @@ ws.close()
 ```
 
 > **Note:** This implementation supports text frames only (no binary, no extensions, no SSL for browsers yet). Suitable for Python-to-Python or custom client/server use.
+
+## Async WebSocket Client
+
+kn_sock provides an asyncio-compatible WebSocket client for modern, non-blocking applications.
+
+### Usage Example
+
+```python
+import asyncio
+from kn_sock.websocket import async_connect_websocket
+
+async def main():
+    ws = await async_connect_websocket('localhost', 8765)
+    await ws.send('Hello async WebSocket!')
+    reply = await ws.recv()
+    print(f"Received: {reply}")
+    await ws.close()
+
+asyncio.run(main())
+```
+
+- `async_connect_websocket(host, port, resource='/', headers=None) -> AsyncWebSocketConnection`: Connects asynchronously to a WebSocket server.
+- `AsyncWebSocketConnection.send(message: str)`: Send a text message (async).
+- `AsyncWebSocketConnection.recv() -> str`: Receive a text message (async).
+- `AsyncWebSocketConnection.close()`: Close the connection (async).
+
+This enables fully async WebSocket clients for chat, dashboards, and real-time apps.
 
 ## HTTP/HTTPS Client Support
 
@@ -1162,6 +1203,68 @@ pip install opencv-python pyaudio numpy
 
 ---
 
+## Troubleshooting Guide
+
+If you encounter issues while using kn-sock, consult this guide for solutions to common problems across all features (TCP/UDP, SSL, file transfer, video chat, etc.).
+
+### Port Conflicts
+- **Error:** `OSError: [Errno 98] Address already in use`
+- **Cause:** The port is already used by another process.
+- **Solution:**
+  - Use a different port number.
+  - Find and stop the process using the port (e.g., `lsof -i :8080` or `netstat -tuln`).
+  - On Linux, you can kill the process: `sudo kill <PID>`.
+
+### SSL Certificate Issues
+- **Error:** `ssl.SSLError: [SSL: CERTIFICATE_VERIFY_FAILED]`
+- **Cause:** Invalid, missing, or self-signed certificates.
+- **Solution:**
+  - Ensure you provide the correct `certfile`, `keyfile`, and (if needed) `cafile`.
+  - For self-signed certs, use the `--no-verify` flag (CLI) or `verify=False` (Python) for testing only.
+  - Regenerate certificates if expired or corrupted.
+  - Check file permissions.
+
+### Network Problems
+- **Error:** `ConnectionRefusedError`, `TimeoutError`, or no response
+- **Cause:**
+  - Server not running or listening on a different port/host
+  - Firewall or NAT blocking the connection
+  - Wrong IP address or hostname
+- **Solution:**
+  - Double-check server address and port.
+  - Ensure the server is running and reachable from the client machine.
+  - Temporarily disable firewalls or add exceptions for the relevant ports.
+  - Use `ping` or `telnet` to test connectivity.
+
+### File Transfer Issues
+- **Error:** `FileNotFoundError`, `PermissionError`, or incomplete transfer
+- **Cause:**
+  - Invalid file path or missing permissions
+  - Network interruption
+- **Solution:**
+  - Verify file paths and directory permissions.
+  - Ensure the file exists and is readable (client) or the save directory is writable (server).
+  - Retry the transfer if interrupted.
+
+### Video/Audio Chat Issues
+- See the dedicated troubleshooting section under 'Multi-Client Video Chat with Voice' above for audio, camera, and display issues.
+
+### Common Error Messages
+- **`Invalid host/port`**: Check your input and use valid hostnames/IPs and port numbers (1-65535).
+- **`File not found`**: Ensure the file path is correct and accessible.
+- **`Directory not found`**: Check the save directory path for file servers.
+- **`SSL: CERTIFICATE_VERIFY_FAILED`**: See SSL section above.
+- **`Connection refused`**: Server is not running or wrong address/port.
+- **`Address already in use`**: Port conflict; use a different port.
+- **`Permission denied`**: Run with appropriate permissions or change file/directory access.
+
+### Still Stuck?
+- Run with increased verbosity or logging if available.
+- Check the [GitHub Issues](https://github.com/KhagendraN/kn-sock/issues) for similar problems.
+- Open a new issue with details about your environment, command, and error message.
+
+---
+
 ## Real World Examples
 
 Explore ready-to-run scripts that solve common networking problems using kn-sock:
@@ -1176,3 +1279,446 @@ Explore ready-to-run scripts that solve common networking problems using kn-sock
 - [Test Utilities](real_world_examples/test_utilities.py): Network test and utility scripts
 
 See the [Real World Examples directory](real_world_examples/) for all scripts and details.
+
+## API Reference
+
+Below is a comprehensive reference for all public functions in kn-sock. Each function includes its signature, parameters, return values, and a brief description. Use this section to quickly look up usage details for any part of the library.
+
+---
+
+### TCP Functions
+
+- **start_tcp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)**
+  - Start a synchronous TCP server.
+  - **Parameters:**
+    - `port` (int): Port to bind.
+    - `handler_func` (callable): Function called for each client (data, addr, client_socket).
+    - `host` (str): Host to bind (default: '0.0.0.0').
+    - `shutdown_event` (threading.Event, optional): For graceful shutdown.
+  - **Returns:** None
+
+- **send_tcp_message(host, port, message)**
+  - Send a string message over TCP.
+  - **Parameters:**
+    - `host` (str): Target host.
+    - `port` (int): Target port.
+    - `message` (str): Message to send.
+  - **Returns:** None
+
+- **start_async_tcp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)**
+  - Start an async TCP server (see Usage section for handler signature).
+  - **Parameters:** Same as above, but handler is async.
+  - **Returns:** None
+
+- **send_tcp_message_async(host, port, message)**
+  - Send a string message over TCP asynchronously.
+  - **Parameters:** Same as above.
+  - **Returns:** None
+
+- **start_ssl_tcp_server(port, handler_func, certfile, keyfile, cafile=None, require_client_cert=False, host='0.0.0.0', shutdown_event=None)**
+  - Start a secure SSL/TLS TCP server.
+  - **Parameters:**
+    - `certfile` (str): Path to server certificate (PEM).
+    - `keyfile` (str): Path to private key (PEM).
+    - `cafile` (str, optional): CA cert for client verification.
+    - `require_client_cert` (bool): Require client cert (mutual TLS).
+    - Others as above.
+  - **Returns:** None
+
+- **send_ssl_tcp_message(host, port, message, cafile=None, certfile=None, keyfile=None, verify=True)**
+  - Send a message over SSL/TLS TCP.
+  - **Parameters:**
+    - `cafile`, `certfile`, `keyfile` as above.
+    - `verify` (bool): Verify server cert (default: True).
+    - Others as above.
+  - **Returns:** None
+
+---
+
+### UDP Functions
+
+- **start_udp_server(port, handler_func, host='0.0.0.0', shutdown_event=None)**
+  - Start a synchronous UDP server.
+  - **Parameters:**
+    - `handler_func` (callable): (data, addr, server_socket).
+    - Others as above.
+  - **Returns:** None
+
+- **send_udp_message(host, port, message)**
+  - Send a string message over UDP.
+  - **Parameters:** Same as TCP.
+  - **Returns:** None
+
+---
+
+### File Transfer Functions
+
+- **send_file(host, port, filepath)**
+  - Send a file over TCP.
+  - **Parameters:**
+    - `filepath` (str): Path to file to send.
+    - Others as above.
+  - **Returns:** None
+
+- **start_file_server(port, save_dir, host='0.0.0.0')**
+  - Start a TCP file receiver.
+  - **Parameters:**
+    - `save_dir` (str): Directory to save received files.
+    - Others as above.
+  - **Returns:** None
+
+---
+
+### JSON Socket Functions
+
+- **start_json_server(port, handler_func, host='0.0.0.0')**
+  - Start a JSON-over-TCP server.
+  - **Parameters:**
+    - `handler_func` (callable): (data: dict, addr, client_socket).
+    - Others as above.
+  - **Returns:** None
+
+- **send_json(host, port, obj, timeout=5)**
+  - Send a JSON object over TCP.
+  - **Parameters:**
+    - `obj` (dict): JSON-serializable object.
+    - `timeout` (int): Timeout in seconds.
+    - Others as above.
+  - **Returns:** None
+
+---
+
+### WebSocket Functions
+
+- **start_websocket_server(host, port, handler, shutdown_event=None)**
+  - Start a WebSocket server.
+  - **Parameters:**
+    - `handler` (callable): (ws) handler for each client.
+    - Others as above.
+  - **Returns:** None
+
+- **connect_websocket(host, port, resource='/', headers=None)**
+  - Connect to a WebSocket server.
+  - **Parameters:**
+    - `resource` (str): WebSocket resource path.
+    - `headers` (dict, optional): Extra headers.
+    - Others as above.
+  - **Returns:** WebSocket client object
+
+---
+
+### HTTP/HTTPS Functions
+
+- **http_get(host, port=80, path='/', headers=None)**
+- **http_post(host, port=80, path='/', data='', headers=None)**
+- **https_get(host, port=443, path='/', headers=None, cafile=None)**
+- **https_post(host, port=443, path='/', data='', headers=None, cafile=None)**
+  - Simple HTTP/HTTPS client helpers.
+  - **Parameters:**
+    - `path` (str): URL path.
+    - `data` (str): POST data.
+    - `headers` (dict): HTTP headers.
+    - `cafile` (str): CA cert for HTTPS.
+    - Others as above.
+  - **Returns:** Response body (str)
+
+---
+
+### Pub/Sub Functions
+
+- **start_pubsub_server(port, handler_func=None, host='0.0.0.0', shutdown_event=None)**
+  - Start a pub/sub server.
+  - **Parameters:**
+    - `handler_func` (callable, optional): Custom handler.
+    - Others as above.
+  - **Returns:** None
+
+- **PubSubClient(host, port)**
+  - Pub/sub client class.
+  - **Methods:**
+    - `subscribe(topic)`
+    - `unsubscribe(topic)`
+    - `publish(topic, message)`
+    - `recv(timeout=None)`
+  - **Returns:** None or message (str)
+
+---
+
+### RPC Functions
+
+- **start_rpc_server(port, register_funcs, host='0.0.0.0', shutdown_event=None)**
+  - Start an RPC server.
+  - **Parameters:**
+    - `register_funcs` (dict): Function name to callable.
+    - Others as above.
+  - **Returns:** None
+
+- **RPCClient(host, port)**
+  - RPC client class.
+  - **Methods:**
+    - `call(function, *args, **kwargs)`
+  - **Returns:** Result of remote function
+
+---
+
+### Live Streaming Functions
+
+- **start_live_stream(port, video_paths, host='0.0.0.0', audio_port=None)**
+  - Start a live video/audio stream server.
+  - **Parameters:**
+    - `video_paths` (list of str): Video file paths.
+    - `audio_port` (int, optional): Audio port.
+    - Others as above.
+  - **Returns:** None
+
+- **connect_to_live_server(ip, port, audio_port=None)**
+  - Connect to a live stream server.
+  - **Parameters:**
+    - `ip` (str): Server IP.
+    - `port` (int): Video port.
+    - `audio_port` (int, optional): Audio port.
+  - **Returns:** None
+
+---
+
+### Video Chat Functions
+
+- **VideoChatServer(host='0.0.0.0', video_port=9000, audio_port=9001, text_port=9002)**
+  - Multi-client video chat server class.
+  - **Methods:**
+    - `start()`
+  - **Parameters:**
+    - `host` (str): Host to bind.
+    - `video_port`, `audio_port`, `text_port` (int): Ports for each stream.
+  - **Returns:** None
+
+- **VideoChatClient(server_ip, video_port=9000, audio_port=9001, text_port=9002, room='default', nickname='user')**
+  - Video chat client class.
+  - **Methods:**
+    - `start()`
+  - **Parameters:**
+    - `server_ip` (str): Server IP.
+    - `room` (str): Room name.
+    - `nickname` (str): User nickname.
+    - Ports as above.
+  - **Returns:** None
+
+---
+
+### Utilities
+
+- **get_free_port()**
+  - Find a free TCP port.
+  - **Returns:** int
+
+- **get_local_ip()**
+  - Get the local IP address.
+  - **Returns:** str
+
+- **chunked_file_reader(filepath, chunk_size=4096)**
+  - Yield file data in chunks.
+  - **Parameters:**
+    - `filepath` (str): Path to file.
+    - `chunk_size` (int): Bytes per chunk.
+  - **Returns:** Iterator[bytes]
+
+- **recv_all(sock, total_bytes)**
+  - Receive exactly `total_bytes` from a socket.
+  - **Parameters:**
+    - `sock` (socket.socket): Socket.
+    - `total_bytes` (int): Number of bytes to receive.
+  - **Returns:** bytes
+
+- **print_progress(received_bytes, total_bytes)**
+  - Print file transfer progress.
+  - **Parameters:**
+    - `received_bytes` (int)
+    - `total_bytes` (int)
+  - **Returns:** None
+
+- **is_valid_json(json_string)**
+  - Check if a string is valid JSON.
+  - **Parameters:**
+    - `json_string` (str)
+  - **Returns:** bool
+
+---
+
+### Errors
+
+- **EasySocketError**: Base exception for all kn_sock errors.
+- **ConnectionTimeoutError**: Raised on connection or read/write timeout.
+- **PortInUseError**: Raised when a port is already in use.
+- **InvalidJSONError**: Raised when a JSON message cannot be decoded.
+- **UnsupportedProtocolError**: Raised for unsupported protocols.
+- **FileTransferError**: Raised when file transfer fails.
+
+See the 'Errors' section above for usage examples.
+
+---
+
+## Message Compression
+
+kn_sock supports gzip and deflate compression for large messages. Use the compression utilities to reduce network usage for big data transfers.
+
+### Usage
+
+```python
+from kn_sock.compression import compress_data, decompress_data, detect_compression
+
+# Compress data
+original = b"some large data..."
+compressed = compress_data(original, method='gzip')
+
+# Send compressed over socket...
+
+# On the receiving end
+detected = detect_compression(compressed)
+restored = decompress_data(compressed)
+assert restored == original
+```
+
+- `compress_data(data: bytes, method: str = 'gzip') -> bytes`: Compress data using gzip or deflate.
+- `decompress_data(data: bytes) -> bytes`: Decompress data (auto-detects gzip/deflate).
+- `detect_compression(data: bytes) -> str`: Detect compression type ('gzip', 'deflate', or 'none').
+
+Use compression for large file transfers, JSON payloads, or any scenario where bandwidth matters.
+
+## Message Queues
+
+kn_sock provides both in-memory and persistent file-based message queues for reliable, thread-safe message delivery.
+
+### InMemoryQueue
+
+A thread-safe FIFO queue for fast, in-memory message passing.
+
+```python
+from kn_sock.queue import InMemoryQueue
+q = InMemoryQueue()
+q.put('hello')
+msg = q.get()
+q.task_done()
+q.join()
+```
+
+### FileQueue
+
+A persistent queue that stores messages on disk, surviving process restarts.
+
+```python
+from kn_sock.queue import FileQueue
+fq = FileQueue('queue.db')
+fq.put('hello')
+msg = fq.get()
+fq.task_done()
+fq.close()
+```
+
+- Both queues support FIFO, blocking get, task_done, join, empty, and qsize.
+- FileQueue provides at-least-once delivery and is safe for multi-process use (with care).
+- Use for background jobs, reliable delivery, or as a building block for pub/sub and task systems.
+
+## Protocol Buffers (Protobuf)
+
+kn_sock supports efficient, type-safe serialization using protocol buffers (protobuf).
+
+### Usage
+
+First, define your .proto file and generate Python classes using protoc:
+
+```bash
+protoc --python_out=. my_proto.proto
+```
+
+Then use the kn_sock utilities:
+
+```python
+from kn_sock.protobuf import serialize_message, deserialize_message
+from my_proto_pb2 import MyMessage
+
+msg = MyMessage(field1='abc', field2=123)
+data = serialize_message(msg)
+restored = deserialize_message(data, MyMessage)
+assert restored.field1 == 'abc'
+```
+
+- `serialize_message(msg) -> bytes`: Serialize a protobuf message to bytes.
+- `deserialize_message(data: bytes, schema) -> object`: Deserialize bytes to a protobuf message (given the schema class).
+
+**Requires:** `pip install protobuf`
+
+Use protobuf for high-performance, cross-language, and type-safe message exchange.
+
+## Load Balancing
+
+kn_sock provides simple load balancing utilities for distributing requests across multiple servers.
+
+### RoundRobinLoadBalancer
+
+Cycles through servers in order, distributing requests evenly.
+
+```python
+from kn_sock.load_balancer import RoundRobinLoadBalancer
+lb = RoundRobinLoadBalancer()
+lb.add_server('127.0.0.1:9000')
+lb.add_server('127.0.0.1:9001')
+server = lb.get_server()  # Returns next server in round-robin order
+```
+
+### LeastConnectionsLoadBalancer
+
+Selects the server with the fewest active connections.
+
+```python
+from kn_sock.load_balancer import LeastConnectionsLoadBalancer
+lcb = LeastConnectionsLoadBalancer()
+lcb.add_server('127.0.0.1:9000')
+lcb.update_connections('127.0.0.1:9000', 2)
+server = lcb.get_server()  # Returns server with fewest connections
+```
+
+- Both support add_server, remove_server, get_server.
+- LeastConnectionsLoadBalancer supports update_connections(server, count).
+- Use for distributing load in high-availability or scalable systems.
+
+## Interactive CLI
+
+The kn-sock package provides an interactive command-line interface (REPL) for managing TCP connections and sending/receiving messages in real time.
+
+### Starting the CLI
+
+```
+python -m kn_sock.cli interactive
+```
+
+### Commands
+
+- `connect <name> <host> <port>`: Connect to a server and store the connection by name.
+- `list`: List all active connections.
+- `select <name>`: Set the default connection for send/receive.
+- `send <message>`: Send a message to the default connection.
+- `receive`: Receive a message from the default connection.
+- `bg_receive`: Toggle background receive mode (prints incoming messages as they arrive).
+- `history`: Show last 10 sent/received messages.
+- `disconnect <name>`: Disconnect a connection.
+- `quit`/`exit`: Exit the CLI.
+- `help`: Show help for all commands.
+
+### Example Session
+
+```
+connect myconn 127.0.0.1 9000
+send Hello, server!
+receive
+bg_receive
+history
+list
+quit
+```
+
+### Tips & Troubleshooting
+
+- If you see 'connection refused', ensure the server is running and reachable.
+- If you see encoding errors, check that the server and client use compatible text encodings (UTF-8 is default).
+- Use `bg_receive` to monitor incoming messages in real time.
+- Use `history` to review recent sent/received messages.

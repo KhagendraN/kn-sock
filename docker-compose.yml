@@ -3,12 +3,16 @@ services:
   knsock:
     build: .
     image: knsock:latest
-    command: ["--help"]
+    entrypoint: ["python", "-m", "kn_sock.cli"]
+    command: ["run-tcp-server", "8080"]
     volumes:
       - .:/app
+    ports:
+      - "8080:8080"  # Example port mapping, adjust as needed
   test:
     build: .
     image: knsock:latest
-    command: ["pytest", "test/"]
+    entrypoint: ["pytest"]
+    command: ["test/"]   # Override this for custom test files
     volumes:
       - .:/app

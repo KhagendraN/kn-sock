@@ -4,6 +4,8 @@ import argparse
 import sys
 import logging
 
+print("DEBUG: CLI launched", flush=True)
+
 logger = logging.getLogger("kn_sock.cli")
 from kn_sock.tcp import (
     send_tcp_message,
@@ -657,3 +659,6 @@ def run_cli():
     else:
         parser.print_help()
         sys.exit(1)
+
+if __name__ == "__main__":
+    run_cli()

@@ -29,6 +29,22 @@ nav:
       - HTTP API Server: real_world_examples/http_api_server.py
       - Live Streaming: real_world_examples/live_streaming.py
       - Test Utilities: real_world_examples/test_utilities.py
+  - API Reference:
+      - Overview: api/index.md
+      - TCP: api/tcp.md
+      - UDP: api/udp.md
+      - HTTP: api/http.md
+      - WebSocket: api/websocket.md
+      - JSON Messaging: api/json.md
+      - File Transfer: api/file_transfer.md
+      - Live Streaming: api/live_stream.md
+      - Pub/Sub: api/pubsub.md
+      - RPC: api/rpc.md
+      - Queues: api/queue.md
+      - Config: api/config.md
+      - Troubleshooting: api/troubleshooting.md
 theme:
   name: material
   logo: kn-sock_logo.png
+markdown_extensions:
+      - admonition

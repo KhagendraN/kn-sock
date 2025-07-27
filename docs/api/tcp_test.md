@@ -1,39 +1,64 @@
-# TCP Utilities
+# Tabs Demo
 
-kn-sock provides both CLI and Python APIs for working with TCP servers and clients.
+## Basic Tabs
+
+=== "Python"
+
+    ```python
+    def greet():
+        print("Hello from Python!")
+    ```
+
+=== "JavaScript"
+
+    ```javascript
+    function greet() {
+        console.log("Hello from JavaScript!");
+    }
+    ```
+
+=== "Shell"
+
+    ```bash
+    echo "Hello from Bash"
+    ```
+
+## Tabs with Content
+
+=== "Overview"
+
+    This section gives you a high-level overview of the system.
+
+=== "Details"
+
+    Here's where we break it down into components and logic.
+
+=== "More Info"
+
+    Links, references, and related topics go here.
+
+
+## Sending a TCP Message
 
 === "CLI"
 
-    ### Run a TCP Echo Server
-
-    | Command | Description |
-    |---|---|
-    | `run-tcp-server <port>` | Start a TCP echo server |
-
     ```sh
-    docker-compose run --rm knsock run-tcp-server 8080
-    # Or: knsock run-tcp-server 8080
+    docker-compose run --rm knsock send-tcp 172.18.0.2 8080 "Hello TCP"
     ```
 
-    !!! tip "Find server IP in Docker"
-        ```sh
-        docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container>
-        ```
+    Output:
+    ```
+    [TCP] Server response: Echo: Hello TCP
+    ```
 
-=== "Python API"
-
-    ### Quickstart
+=== "Python"
 
     ```python
     from kn_sock import send_tcp_message
-    send_tcp_message("127.0.0.1", 8080, "Hello TCP")
+    send_tcp_message('127.0.0.1', 8080, "Hello TCP")
     ```
 
-    ### Reference
-
-    ::: kn_sock.tcp.start_tcp_server
-        options:
-          heading_level: 3
-          members_order: source
-          filters: ["!^_"]
-          show_source: false
+    Output:
+    ```
+    [TCP] Server response: Echo: Hello TCP
+    ```

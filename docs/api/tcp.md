@@ -1,7 +1,23 @@
 # TCP Utilities
 
 kn-sock provides both CLI and Python APIs for working with TCP servers and clients.  
-Use these commands to build, test, and automate network communication quickly.
+Use these commands to build, test, and automate network communication.
+
+## Function Index
+
+| Function/Class | Description |
+|--|--|
+| [start_tcp_server](#kn_sock.tcp.start_tcp_server) | Start a basic synchronous TCP server for single-connection, blocking I/O. Use for simple demos or network testing. |
+| [start_threaded_tcp_server](#kn_sock.tcp.start_threaded_tcp_server) | Multithreaded TCP server that spawns a thread per client. Best for serving multiple simultaneous connections with blocking I/O. |
+| [send_tcp_message](#kn_sock.tcp.send_tcp_message) | Synchronous TCP client: connects, sends a string, and logs the response (does not return it). For basic text protocols. |
+| [send_tcp_bytes](#kn_sock.tcp.send_tcp_bytes) | Synchronous TCP client for sending raw bytes (binary payloads), logging any server response. Useful for custom protocols. |
+| [start_async_tcp_server](#kn_sock.tcp.start_async_tcp_server) | Async TCP server using asyncio. Efficiently handles many connections in a single event loop. Recommended for async workloads. |
+| [send_tcp_message_async](#kn_sock.tcp.send_tcp_message_async) | Async TCP client: sends a string and logs the server response without blocking. Ideal for non-blocking client logic. |
+| [TCPConnectionPool](#kn_sock.tcp.TCPConnectionPool) | Thread-safe pool for managing/reusing TCP (and SSL) connections. Improves performance for high-throughput or threaded apps. |
+| [start_ssl_tcp_server](#kn_sock.tcp.start_ssl_tcp_server) | Synchronous SSL/TLS TCP server, with support for client cert verification (mTLS). Use for encrypted, authenticated communication. |
+| [send_ssl_tcp_message](#kn_sock.tcp.send_ssl_tcp_message) | Synchronous SSL/TLS client: connects, sends a string, logs the response. Secure text-based messaging. |
+| [start_async_ssl_tcp_server](#kn_sock.tcp.start_async_ssl_tcp_server) | Async SSL/TLS TCP server using asyncio. Handles encrypted connections concurrently in a secure event loop. |
+| [send_ssl_tcp_message_async](#kn_sock.tcp.send_ssl_tcp_message_async) | Async SSL/TLS client: connects, sends a string, and logs the response asynchronously. Best for secure non-blocking clients. |
 
 ## CLI Commands
 
@@ -68,7 +84,7 @@ docker-compose run --rm knsock send-tcp 172.18.0.2 8080 "Hello TCP"
 | `<host>`      | IP or hostname of server (client only)|
 | `<message>`   | Message to send (client only)         |
 
-## Python API
+## Python API Usage Examples
 
 ### Start a TCP Server
 ```python
@@ -133,19 +149,38 @@ If you see the following in your client terminal, the test passes:
 
 ## TCP Server APIs
 
+### Synchronous
 ::: kn_sock.tcp.start_tcp_server
 ::: kn_sock.tcp.start_threaded_tcp_server
 
+### Asynchronous
+::: kn_sock.tcp.start_async_tcp_server
+
 ## TCP Client APIs
 
+### Synchronous
 ::: kn_sock.tcp.send_tcp_message
 ::: kn_sock.tcp.send_tcp_bytes
 
-## Async APIs
-
-::: kn_sock.tcp.start_async_tcp_server
+### Asynchronous
 ::: kn_sock.tcp.send_tcp_message_async
 
 ## Connection Pools
 
 ::: kn_sock.tcp.TCPConnectionPool
+
+## SSL/TLS Server
+
+### Synchronous
+::: kn_sock.tcp.start_ssl_tcp_server
+
+### Asynchronous
+::: kn_sock.tcp.start_async_ssl_tcp_server
+
+## SSL/TLS Client
+
+### Synchronous
+::: kn_sock.tcp.send_ssl_tcp_message
+
+### Asynchronous
+::: kn_sock.tcp.send_ssl_tcp_message_async

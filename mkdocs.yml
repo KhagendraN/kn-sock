@@ -46,6 +46,12 @@ nav:
       - Queues: api/queue.md
       - Config: api/config.md
       - Troubleshooting: api/troubleshooting.md
+  - TCP Utilities:
+      - Overview: tcp/index.md
+      - Using the CLI: tcp/cli.md
+      - Using the Python API: tcp/python-api.md
+      - API Reference: tcp/reference.md
+      - Testing: tcp/testing.md
 theme:
   name: material
   logo: kn-sock_logo.png

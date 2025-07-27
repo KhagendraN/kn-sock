@@ -166,10 +166,11 @@ def start_threaded_tcp_server(
 
 def send_tcp_message(host: str, port: int, message: str):
     """
-    Sends a message to a TCP server (IPv4/IPv6 supported) and waits for a response.
+    Sends a message to a TCP server (IPv4/IPv6 supported) and logs the server's response.
 
     Opens a TCP connection to the specified host and port, sends the given message
-    as UTF-8 bytes, and returns the server's response as a string if one is received.
+    as UTF-8 bytes, and logs the server's response (if any) to the logger.
+    This function does not return the server's response.
 
     Args:
         host (str): The target host address (IPv4, IPv6, or hostname).
@@ -177,7 +178,7 @@ def send_tcp_message(host: str, port: int, message: str):
         message (str): The message to send.
 
     Returns:
-        Optional[str]: The response from the server as a UTF-8 string, or None if no response is received.
+        None
 
     Raises:
         ConnectionError: If unable to connect to the server.
@@ -185,7 +186,6 @@ def send_tcp_message(host: str, port: int, message: str):
 
     Example:
         >>> send_tcp_message("localhost", 8080, "hello world")
-        'Echo: hello world'
     """
     family = _get_socket_family(host)
     with socket.socket(family, socket.SOCK_STREAM) as client_socket:
@@ -200,10 +200,11 @@ def send_tcp_message(host: str, port: int, message: str):
 
 def send_tcp_bytes(host: str, port: int, data: bytes):
     """
-    Sends raw bytes to a TCP server and returns the response as bytes.
+    Sends raw bytes to a TCP server and logs the response.
 
     Opens a TCP connection to the specified host and port, sends the given
-    data as-is (no encoding), and returns the server's response as bytes if one is received.
+    data as-is (no encoding), and logs the server's response (if any) as bytes.
+    This function does not return the response.
 
     Args:
         host (str): The target host address (IPv4, IPv6, or hostname).
@@ -211,17 +212,14 @@ def send_tcp_bytes(host: str, port: int, data: bytes):
         data (bytes): The data to send.
 
     Returns:
-        Optional[bytes]: The raw response from the server as bytes, or None if no response is received.
+        None
 
     Raises:
         ConnectionError: If unable to connect to the server.
         socket.error: For network-related errors.
 
     Example:
-        >>> response = send_tcp_bytes("127.0.0.1", 8080, b"ping")
-        >>> if response:
-        ...     print(response)
-        b'pong'
+        >>> send_tcp_bytes("127.0.0.1", 8080, b"ping")
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((host, port))
@@ -356,16 +354,41 @@ def start_ssl_tcp_server(
     shutdown_event: Optional[threading.Event] = None,
 ):
     """
-    Starts a synchronous SSL/TLS TCP server with graceful shutdown support.
+    Starts a synchronous SSL/TLS TCP server with optional client certificate verification.
+
+    Listens for incoming SSL/TLS connections on the specified port. For each client connection,
+    wraps the socket with SSL/TLS, then invokes the handler function with the received data,
+    client address, and SSL socket. Supports IPv4 and IPv6.
+
     Args:
-        port (int): Port to bind.
-        handler_func (callable): Function to handle (data, addr, client_socket).
-        certfile (str): Path to server certificate (PEM).
-        keyfile (str): Path to server private key (PEM).
-        cafile (str, optional): CA cert for client cert verification.
-        require_client_cert (bool): Require client certificate (mutual TLS).
-        host (str): Host to bind.
-        shutdown_event (threading.Event, optional): If provided, server will exit when event is set.
+        port (int): Port to bind the server to.
+        handler_func (callable): Function to handle incoming data.
+            Signature: (data: bytes, addr: tuple, ssl_sock: ssl.SSLSocket) -> None
+        certfile (str): Path to the server certificate file in PEM format.
+        keyfile (str): Path to the server private key file in PEM format.
+        cafile (str, optional): Path to CA certificate for verifying client certificates.
+        require_client_cert (bool, optional): Whether to require client certificates for mutual TLS. Defaults to False.
+        host (str, optional): Host to bind (IPv4 or IPv6). Defaults to "0.0.0.0".
+        shutdown_event (threading.Event, optional): If provided, server will exit gracefully when this event is set.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If the port is unavailable or socket operations fail.
+        ssl.SSLError: For SSL/TLS handshake or certificate errors.
+        socket.error: For network-related errors.
+
+    Example:
+        >>> def echo_handler(data, addr, ssl_sock):
+        ...     print(f"Received from {addr}: {data}")
+        ...     ssl_sock.sendall(b"Echo: " + data)
+        >>> start_ssl_tcp_server(
+        ...     port=8443,
+        ...     handler_func=echo_handler,
+        ...     certfile="server.pem",
+        ...     keyfile="server-key.pem"
+        ... )
     """
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile=certfile, keyfile=keyfile)
@@ -407,15 +430,36 @@ def send_ssl_tcp_message(
     host, port, message, cafile=None, certfile=None, keyfile=None, verify=True
 ):
     """
-    Sends a message to an SSL/TLS TCP server and prints the response.
+    Sends a message to an SSL/TLS TCP server and returns the response.
+
+    Opens a secure SSL/TLS connection to the specified host and port, sends the given message as UTF-8 bytes,
+    and returns the server's response as a string if one is received. Supports server verification and mutual TLS.
+
     Args:
-        host (str): Server host.
-        port (int): Server port.
-        message (str): Message to send.
-        cafile (str, optional): CA cert for server verification.
-        certfile (str, optional): Client cert for mutual TLS.
-        keyfile (str, optional): Client key for mutual TLS.
-        verify (bool): Whether to verify server cert.
+        host (str): The server host address (IPv4, IPv6, or hostname).
+        port (int): The server port number.
+        message (str): The message to send.
+        cafile (str, optional): Path to a CA certificate file for verifying the server.
+        certfile (str, optional): Path to the client certificate file for mutual TLS.
+        keyfile (str, optional): Path to the client private key file for mutual TLS.
+        verify (bool, optional): Whether to verify the server certificate. Defaults to True.
+
+    Returns:
+        Optional[str]: The response from the server as a UTF-8 string, or None if no response is received.
+
+    Raises:
+        ConnectionError: If unable to connect to the server.
+        ssl.SSLError: For SSL/TLS handshake or verification errors.
+        socket.error: For network-related errors.
+
+    Example:
+        >>> send_ssl_tcp_message(
+        ...     host="localhost",
+        ...     port=8443,
+        ...     message="secure hello",
+        ...     cafile="ca.pem"
+        ... )
+        'Echo: secure hello'
     """
     context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=cafile)
     if not verify:
@@ -446,16 +490,43 @@ async def start_async_ssl_tcp_server(
     shutdown_event: Optional["asyncio.Event"] = None,
 ):
     """
-    Starts an asynchronous SSL/TLS TCP server with graceful shutdown support.
+    Starts an asynchronous SSL/TLS TCP server with optional client certificate verification.
+
+    Listens for incoming SSL/TLS connections using asyncio on the specified port.
+    For each client, wraps the connection with SSL/TLS and invokes the provided async handler function
+    with the received data, client address, and StreamWriter. Supports IPv4 and IPv6, as well as graceful shutdown.
+
     Args:
-        port (int): Port to bind.
-        handler_func (callable): async function (data, addr, writer).
-        certfile (str): Path to server certificate (PEM).
-        keyfile (str): Path to server private key (PEM).
-        cafile (str, optional): CA cert for client cert verification.
-        require_client_cert (bool): Require client certificate (mutual TLS).
-        host (str): Host to bind.
-        shutdown_event (asyncio.Event, optional): If provided, server will exit when event is set.
+        port (int): Port to bind the server to.
+        handler_func (Callable): Async function to handle incoming data.
+            Signature: (data: bytes, addr: tuple, writer: asyncio.StreamWriter) -> Awaitable[None]
+        certfile (str): Path to the server certificate file in PEM format.
+        keyfile (str): Path to the server private key file in PEM format.
+        cafile (str, optional): Path to CA certificate for verifying client certificates.
+        require_client_cert (bool, optional): Whether to require client certificates for mutual TLS. Defaults to False.
+        host (str, optional): Host to bind (IPv4 or IPv6). Defaults to "0.0.0.0".
+        shutdown_event (asyncio.Event, optional): If provided, the server will exit gracefully when this event is set.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If the port is unavailable or socket operations fail.
+        ssl.SSLError: For SSL/TLS handshake or certificate errors.
+        asyncio.CancelledError: If the server task is cancelled.
+
+    Example:
+        >>> import asyncio
+        >>> async def echo_handler(data, addr, writer):
+        ...     print(f"Received from {addr}: {data.decode()}")
+        ...     writer.write(b"Echo: " + data)
+        ...     await writer.drain()
+        >>> asyncio.run(start_async_ssl_tcp_server(
+        ...     port=8443,
+        ...     handler_func=echo_handler,
+        ...     certfile="server.pem",
+        ...     keyfile="server-key.pem"
+        ... ))
     """
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile=certfile, keyfile=keyfile)
@@ -499,15 +570,41 @@ async def send_ssl_tcp_message_async(
     host, port, message, cafile=None, certfile=None, keyfile=None, verify=True
 ):
     """
-    Sends a message to an SSL/TLS TCP server asynchronously and prints the response.
+    Sends a message to an SSL/TLS TCP server asynchronously and returns the response.
+
+    Opens an asynchronous SSL/TLS connection to the specified host and port,
+    sends the given message as UTF-8 bytes, and awaits the server's response as a string.
+    Supports server verification and mutual TLS authentication.
+
     Args:
-        host (str): Server host.
-        port (int): Server port.
-        message (str): Message to send.
-        cafile (str, optional): CA cert for server verification.
-        certfile (str, optional): Client cert for mutual TLS.
-        keyfile (str, optional): Client key for mutual TLS.
-        verify (bool): Whether to verify server cert.
+        host (str): The server host address (IPv4, IPv6, or hostname).
+        port (int): The server port number.
+        message (str): The message to send.
+        cafile (str, optional): Path to a CA certificate file for verifying the server.
+        certfile (str, optional): Path to the client certificate file for mutual TLS.
+        keyfile (str, optional): Path to the client private key file for mutual TLS.
+        verify (bool, optional): Whether to verify the server certificate. Defaults to True.
+
+    Returns:
+        Optional[str]: The response from the server as a UTF-8 string, or None if no response is received.
+
+    Raises:
+        ConnectionError: If unable to connect to the server.
+        ssl.SSLError: For SSL/TLS handshake or verification errors.
+        socket.error: For network-related errors.
+
+    Example:
+        >>> import asyncio
+        >>> response = asyncio.run(
+        ...     send_ssl_tcp_message_async(
+        ...         host="localhost",
+        ...         port=8443,
+        ...         message="secure async hello",
+        ...         cafile="ca.pem"
+        ...     )
+        ... )
+        >>> print(response)
+        Echo: secure async hello
     """
     context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=cafile)
     if not verify:

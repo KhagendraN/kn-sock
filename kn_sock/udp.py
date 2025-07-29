@@ -26,12 +26,28 @@ def start_udp_server(
     shutdown_event=None,
 ):
     """
-    Starts a synchronous UDP server (IPv4/IPv6 supported) with graceful shutdown support.
+    Starts a synchronous UDP server that listens for incoming datagrams and delegates them to a handler function.
+
     Args:
-        port (int): Port to bind.
-        handler_func (callable): Function to handle (data, addr, socket).
-        host (str): Host to bind (IPv4 or IPv6).
-        shutdown_event (threading.Event, optional): If provided, server will exit when event is set.
+        port (int): Port to bind the server to.
+        handler_func (Callable): A function that handles incoming data. 
+            Called as `handler_func(data, addr, socket)`.
+        host (str, optional): Host/IP to bind to. Defaults to "0.0.0.0".
+        shutdown_event (threading.Event, optional): If provided, the server will shut down gracefully when the event is set.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If the socket fails to bind or encounters an error.
+
+    Examples:
+        >>> def echo_handler(data, addr, sock):
+        ...     print(f"Received from {addr}: {data.decode()}")
+        ...     sock.sendto(data, addr)
+        >>> import threading
+        >>> stop_event = threading.Event()
+        >>> start_udp_server(8081, echo_handler, shutdown_event=stop_event)
     """
     family = _get_socket_family(host)
     server_socket = socket.socket(family, socket.SOCK_DGRAM)
@@ -58,7 +74,21 @@ def start_udp_server(
 
 def send_udp_message(host: str, port: int, message: str):
     """
-    Sends a message to a UDP server (IPv4/IPv6 supported).
+    Sends a UTF-8 encoded message to a UDP server.
+
+    Args:
+        host (str): Target server hostname or IP address.
+        port (int): Destination port on the server.
+        message (str): Message to send.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If sending the datagram fails.
+
+    Examples:
+        >>> send_udp_message("127.0.0.1", 8081, "Hello UDP")
     """
     family = _get_socket_family(host)
     with socket.socket(family, socket.SOCK_DGRAM) as sock:
@@ -78,12 +108,26 @@ async def start_udp_server_async(
     shutdown_event=None,
 ):
     """
-    Starts an asynchronous UDP server with graceful shutdown support.
+    Starts an asynchronous UDP server using asyncio. Runs a handler for each incoming datagram.
+
     Args:
-        port (int): Port to bind.
-        handler_func (callable): async function (data, addr, transport).
-        host (str): Host to bind.
-        shutdown_event (asyncio.Event, optional): If provided, server will exit when event is set.
+        port (int): Port to bind the server to.
+        handler_func (Callable): Async function called as `await handler_func(data, addr, transport)`.
+        host (str, optional): Host/IP to bind to. Defaults to "0.0.0.0".
+        shutdown_event (asyncio.Event, optional): If provided, the server will exit when the event is set.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If socket setup fails.
+
+    Examples:
+        >>> import asyncio
+        >>> async def echo_handler(data, addr, transport):
+        ...     print(f"Received from {addr}: {data.decode()}")
+        ...     transport.sendto(data, addr)
+        >>> asyncio.run(start_udp_server_async(8082, echo_handler))
     """
 
     class UDPProtocol(asyncio.DatagramProtocol):
@@ -120,7 +164,22 @@ async def start_udp_server_async(
 
 async def send_udp_message_async(host: str, port: int, message: str):
     """
-    Sends a message to a UDP server asynchronously.
+    Sends a UTF-8 message asynchronously to a UDP server.
+
+    Args:
+        host (str): Target server hostname or IP address.
+        port (int): Destination port on the server.
+        message (str): Message to send.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If sending the message fails.
+
+    Examples:
+        >>> import asyncio
+        >>> asyncio.run(send_udp_message_async("127.0.0.1", 8082, "Async Hello"))
     """
     loop = asyncio.get_running_loop()
     transport, _ = await loop.create_datagram_endpoint(
@@ -133,12 +192,22 @@ async def send_udp_message_async(host: str, port: int, message: str):
 
 def send_udp_multicast(group: str, port: int, message: str, ttl: int = 1):
     """
-    Send a UDP multicast message to the given group and port.
+    Sends a multicast UDP message to a given group and port.
+
     Args:
         group (str): Multicast group IP (e.g., '224.0.0.1').
-        port (int): Multicast port.
+        port (int): Multicast port number.
         message (str): Message to send.
-        ttl (int): Multicast TTL (default 1).
+        ttl (int, optional): Time-to-live for multicast packets. Defaults to 1.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If socket configuration or send fails.
+
+    Examples:
+        >>> send_udp_multicast("224.0.0.1", 9000, "Multicast Hello")
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
@@ -154,13 +223,27 @@ def start_udp_multicast_server(
     shutdown_event=None,
 ):
     """
-    Start a UDP multicast server that listens for messages on the given group and port.
+    Starts a UDP multicast server that listens for messages on a specified group and port.
+
     Args:
         group (str): Multicast group IP (e.g., '224.0.0.1').
-        port (int): Multicast port.
-        handler_func (callable): Function to handle (data, addr, socket).
-        listen_ip (str): Local IP to bind (default '0.0.0.0').
-        shutdown_event (threading.Event, optional): For graceful shutdown.
+        port (int): Multicast port to listen on.
+        handler_func (Callable): Function called as `handler_func(data, addr, socket)` for each received message.
+        listen_ip (str, optional): Local interface IP to bind to. Defaults to "0.0.0.0".
+        shutdown_event (threading.Event, optional): If provided, the server will shut down when the event is set.
+
+    Returns:
+        None
+
+    Raises:
+        OSError: If socket configuration or binding fails.
+
+    Examples:
+        >>> def handler(data, addr, sock):
+        ...     print(f"[MULTICAST] Received from {addr}: {data.decode()}")
+        >>> import threading
+        >>> stop_event = threading.Event()
+        >>> start_udp_multicast_server("224.0.0.1", 9000, handler, shutdown_event=stop_event)
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

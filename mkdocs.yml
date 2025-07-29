@@ -52,6 +52,12 @@ nav:
       - Using the Python API: tcp/python-api.md
       - API Reference: tcp/reference.md
       - Testing: tcp/testing.md
+  - UDP Utilities:
+    - Overview: udp/index.md
+    - Using the CLI: udp/cli.md
+    - Using the Python API: udp/python-api.md
+    - API Reference: udp/reference.md
+    - Testing: udp/testing.md
 theme:
   name: material
   logo: kn-sock_logo.png

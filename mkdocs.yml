@@ -34,9 +34,6 @@ nav:
       - TCP TEST: api/tcp_test.md
       - API Reference: api/api_reference.md
       - Overview: api/index.md
-      - TCP: api/tcp.md
-      - UDP: api/udp.md
-      - HTTP: api/http.md
       - WebSocket: api/websocket.md
       - JSON Messaging: api/json.md
       - File Transfer: api/file_transfer.md
@@ -46,6 +43,12 @@ nav:
       - Queues: api/queue.md
       - Config: api/config.md
       - Troubleshooting: api/troubleshooting.md
+  - HTTP:
+      - Overview: http/index.md
+      - Using the CLI: http/cli.md
+      - Using the Python API: http/python-api.md
+      - API Reference: http/reference.md
+      - Testing: http/testing.md
   - TCP Utilities:
       - Overview: tcp/index.md
       - Using the CLI: tcp/cli.md
@@ -58,6 +61,10 @@ nav:
     - Using the Python API: udp/python-api.md
     - API Reference: udp/reference.md
     - Testing: udp/testing.md
+  - Archive:
+    - HTTP: api/http.md
+    - TCP: archive/tcp.md
+    - UDP: archive/udp.md
 theme:
   name: material
   logo: kn-sock_logo.png

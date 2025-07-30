@@ -119,10 +119,10 @@ For UDP protocol/network issues, see [Testing & Troubleshooting](testing.md).
 
 Open two terminals:
 
-1. **Start the server**  
-   ```sh
-   docker-compose run --rm knsock udp run-udp-server 8081
-   ```
+Start the server  
+```sh
+docker-compose run --rm knsock udp run-udp-server 8081
+```
 
 Send a message
 

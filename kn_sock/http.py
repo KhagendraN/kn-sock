@@ -8,15 +8,24 @@ from typing import Optional, Dict, Callable
 def http_get(
     host: str, port: int = 80, path: str = "/", headers: Optional[Dict[str, str]] = None
 ) -> str:
-    """
-    Perform a simple HTTP GET request.
+    """Send a synchronous HTTP **GET** request.
+
     Args:
-        host (str): Server host.
-        port (int): Server port (default 80).
-        path (str): Resource path (default '/').
-        headers (dict): Optional headers.
+        host: Server hostname or IP address.
+        port: Server port; defaults to ``80``.
+        path: Resource path, for example ``"/api"`` or ``"/"``.
+        headers: Optional additional request headers.
+
     Returns:
-        str: Response body.
+        str: Response body decoded as UTF-8 (errors replaced).
+
+    Raises:
+        ConnectionError: When the socket cannot connect.
+        socket.error: For lower-level network errors.
+
+    Example:
+        >>> body = http_get("example.com", 80, "/")
+        >>> print(body)
     """
     sock = socket.create_connection((host, port))
     req = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n"
@@ -42,16 +51,25 @@ def http_post(
     data: str = "",
     headers: Optional[Dict[str, str]] = None,
 ) -> str:
-    """
-    Perform a simple HTTP POST request.
+    """Send a synchronous HTTP **POST** request with a string payload.
+
     Args:
-        host (str): Server host.
-        port (int): Server port (default 80).
-        path (str): Resource path (default '/').
-        data (str): POST body.
-        headers (dict): Optional headers.
+        host: Server hostname or IP address.
+        port: Server port; defaults to ``80``.
+        path: Resource path.
+        data: Request body as a string.
+        headers: Optional additional request headers.
+
     Returns:
-        str: Response body.
+        str: Response body decoded as UTF-8 (errors replaced).
+
+    Raises:
+        ConnectionError: When the socket cannot connect.
+        socket.error: For lower-level network errors.
+
+    Example:
+        >>> body = http_post("localhost", 8000, "/", "name=knsock")
+        >>> assert "200 OK" in body
     """
     sock = socket.create_connection((host, port))
     req = f"POST {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\nContent-Length: {len(data.encode())}\r\n"
@@ -78,16 +96,25 @@ def https_get(
     headers: Optional[Dict[str, str]] = None,
     cafile: Optional[str] = None,
 ) -> str:
-    """
-    Perform a simple HTTPS GET request.
+    """Send a synchronous **HTTPS GET** request.
+
     Args:
-        host (str): Server host.
-        port (int): Server port (default 443).
-        path (str): Resource path (default '/').
-        headers (dict): Optional headers.
-        cafile (str): Path to CA file for server verification (optional).
+        host: Server hostname.
+        port: Server port; defaults to ``443``.
+        path: Resource path.
+        headers: Optional additional request headers.
+        cafile: Path to a CA bundle file to verify the server certificate.
+
     Returns:
-        str: Response body.
+        str: Response body decoded as UTF-8 (errors replaced).
+
+    Raises:
+        ConnectionError: When the socket cannot connect.
+        ssl.SSLError: For TLS handshake problems.
+
+    Example:
+        >>> body = https_get("api.github.com", 443, "/")
+        >>> print(body)
     """
     context = (
         ssl.create_default_context(cafile=cafile)
@@ -120,17 +147,26 @@ def https_post(
     headers: Optional[Dict[str, str]] = None,
     cafile: Optional[str] = None,
 ) -> str:
-    """
-    Perform a simple HTTPS POST request.
+    """Send a synchronous **HTTPS POST** request with a string payload.
+
     Args:
-        host (str): Server host.
-        port (int): Server port (default 443).
-        path (str): Resource path (default '/').
-        data (str): POST body.
-        headers (dict): Optional headers.
-        cafile (str): Path to CA file for server verification (optional).
+        host: Server hostname.
+        port: Server port; defaults to ``443``.
+        path: Resource path.
+        data: Request body as a string.
+        headers: Optional additional request headers.
+        cafile: Path to a CA bundle file to verify the server certificate.
+
     Returns:
-        str: Response body.
+        str: Response body decoded as UTF-8 (errors replaced).
+
+    Raises:
+        ConnectionError: When the socket cannot connect.
+        ssl.SSLError: For TLS handshake problems.
+
+    Example:
+        >>> body = https_post("example.com", 443, "/submit", "payload")
+        >>> print(body)
     """
     context = (
         ssl.create_default_context(cafile=cafile)
@@ -163,14 +199,43 @@ def start_http_server(
     routes: Optional[Dict[str, Callable]] = None,
     shutdown_event: Optional[threading.Event] = None,
 ):
-    """
-    Start a minimal HTTP server.
+    """Start a blocking, single-thread-per-client HTTP server.
+
+    The server handles three simple cases:
+
+    1. If *routes* defines a handler for ``(method, path)``, that handler runs.
+       The handler must send the full HTTP response on the passed socket.
+    2. If *static_dir* is set, any other path maps to ``static_dir/<path>``.
+       Missing files return **404**.
+    3. Any unmatched request returns **404**.
+
     Args:
-        host (str): Host to bind.
-        port (int): Port to bind.
-        static_dir (str, optional): Directory to serve static files from (default None).
-        routes (dict, optional): Mapping of (method, path) to handler function. Handler signature: (request, client_socket) -> None.
-        shutdown_event (threading.Event, optional): For graceful shutdown.
+        host: Bind address (for example ``"0.0.0.0"``).
+        port: Bind port.
+        static_dir: Optional directory to serve static files from.
+        routes: Optional mapping of ``(method, path)`` tuples to handler
+            functions.  A handler receives ``(request_dict, client_socket)``.
+        shutdown_event: Optional :class:`threading.Event` that, when set,
+            prompts the server loop to exit cleanly.
+    
+    Raises:
+        OSError: If the socket fails to bind (e.g., port already in use).
+        ValueError: If invalid handler arguments or routes are passed.
+        RuntimeError: If a threading error occurs when starting the server.
+
+    Example:
+        ```python
+        from kn_sock.http import start_http_server
+
+        def ping(req, sock):
+            sock.sendall(b"HTTP/1.1 200 OK\\r\\nContent-Length: 4\\r\\n\\r\\npong")
+
+        start_http_server(
+            host="0.0.0.0",
+            port=8080,
+            routes={("GET", "/ping"): ping}
+        )
+        ```
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

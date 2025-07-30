@@ -10,12 +10,42 @@ GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 
 class WebSocketConnection:
+    """
+    Represents a synchronous WebSocket connection.
+
+    Used for sending and receiving UTF-8 text messages after a successful
+    WebSocket handshake. Typically returned by `connect_websocket()` or passed to
+    handlers in `start_websocket_server()`.
+
+    Methods:
+        send(str): Send a UTF-8 text message.
+        recv(): Receive a UTF-8 message.
+        close(): Gracefully close the connection.
+
+    Attributes:
+        conn (socket.socket): The underlying socket object.
+        addr (tuple): Remote address of the peer.
+        open (bool): True if the connection is active.
+    """
     def __init__(self, conn, addr):
         self.conn = conn
         self.addr = addr
         self.open = True
 
     def send(self, message: str):
+        """
+        Send a UTF-8 text message over the WebSocket connection.
+
+        Args:
+            message (str): The message to send.
+
+        Raises:
+            socket.error: If the send operation fails.
+            BrokenPipeError: If the connection is already closed.
+
+        Example:
+            >>> ws.send("Hello from client")
+        """    
         # Send a text frame
         payload = message.encode("utf-8")
         header = b"\x81"  # FIN + text frame
@@ -29,6 +59,20 @@ class WebSocketConnection:
         self.conn.sendall(header + payload)
 
     def recv(self) -> str:
+        """
+        Receive a UTF-8 text message from the WebSocket connection.
+
+        Returns:
+            str: The received message, or an empty string if the connection is closed.
+
+        Raises:
+            socket.error: If receiving fails.
+            UnicodeDecodeError: If the received message is not valid UTF-8.
+
+        Example:
+            >>> message = ws.recv()
+            >>> print(message)
+        """
         # Receive a text frame (no fragmentation, no extensions)
         first2 = self.conn.recv(2)
         if not first2:
@@ -52,6 +96,17 @@ class WebSocketConnection:
             return data.decode("utf-8")
 
     def close(self):
+        """
+        Close the WebSocket connection gracefully.
+
+        Sends a close frame and closes the socket.
+
+        Raises:
+            socket.error: If the socket fails to send the close frame.
+
+        Example:
+            >>> ws.close()
+        """
         # Send close frame
         try:
             self.conn.sendall(b"\x88\x00")
@@ -62,6 +117,21 @@ class WebSocketConnection:
 
 
 def _handshake(conn):
+    """
+    Perform a minimal WebSocket handshake on the given TCP socket.
+
+    Args:
+        conn (socket.socket): The client socket.
+
+    Returns:
+        bool: True if the handshake succeeded, False otherwise.
+    
+    Example:
+    This function is used internally by `start_websocket_server()`.
+
+    >>> if not _handshake(conn):
+    ...     conn.close()
+    """
     # Minimal WebSocket handshake
     request = b""
     while b"\r\n\r\n" not in request:
@@ -95,12 +165,27 @@ def start_websocket_server(
     shutdown_event=None,
 ):
     """
-    Start a minimal WebSocket server.
+    Start a blocking WebSocket server using threads per client.
+
+    Accepts TCP connections, performs a WebSocket handshake, and passes each
+    connected client to the given handler in a new thread.
+
     Args:
-        host (str): Host to bind.
-        port (int): Port to bind.
-        handler (callable): Function called with WebSocketConnection for each client.
-        shutdown_event (threading.Event, optional): For graceful shutdown.
+        host (str): Bind address (e.g. "0.0.0.0").
+        port (int): Port number to listen on.
+        handler (Callable): Function that receives a WebSocketConnection.
+        shutdown_event (threading.Event, optional): Allows graceful shutdown if set.
+
+    Raises:
+        OSError: If the socket cannot bind or listen.
+        socket.error: On lower-level socket failure.
+
+    Example:
+        >>> def echo(ws):
+        ...     while ws.open:
+        ...         msg = ws.recv()
+        ...         ws.send(f"Echo: {msg}")
+        >>> start_websocket_server("0.0.0.0", 8765, echo)
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -131,14 +216,28 @@ def connect_websocket(
     host: str, port: int, resource: str = "/", headers: Optional[dict] = None
 ) -> WebSocketConnection:
     """
-    Connect to a WebSocket server and return a WebSocketConnection.
+    Connect to a WebSocket server synchronously.
+
+    Performs a WebSocket handshake and returns a WebSocketConnection.
+
     Args:
-        host (str): Server host.
-        port (int): Server port.
-        resource (str): Resource path (default '/').
-        headers (dict): Additional headers.
+        host (str): Server hostname or IP.
+        port (int): Port number.
+        resource (str): URL path to connect to (default is "/").
+        headers (dict, optional): Additional HTTP headers.
+
     Returns:
-        WebSocketConnection
+        WebSocketConnection: A usable connection object.
+
+    Raises:
+        ConnectionError: If the handshake fails.
+        socket.error: If the connection fails.
+
+    Example:
+        >>> ws = connect_websocket("localhost", 8765)
+        >>> ws.send("hello")
+        >>> print(ws.recv())
+        >>> ws.close()
     """
     import os
     import random
@@ -173,12 +272,39 @@ def connect_websocket(
 
 # --- Async WebSocket Client ---
 class AsyncWebSocketConnection:
+    """
+    Represents an asynchronous WebSocket connection.
+
+    Used for sending and receiving UTF-8 text messages in asyncio-based clients.
+
+    Methods:
+        send(str): Send a message asynchronously.
+        recv(): Receive a message asynchronously.
+        close(): Gracefully close the connection.
+
+    Attributes:
+        reader (asyncio.StreamReader): The input stream.
+        writer (asyncio.StreamWriter): The output stream.
+        open (bool): True if the connection is still open.
+    """
     def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         self.reader = reader
         self.writer = writer
         self.open = True
 
     async def send(self, message: str):
+        """
+        Send a UTF-8 text message asynchronously.
+
+        Args:
+            message (str): Message to send.
+
+        Raises:
+            ConnectionError: If the socket write fails.
+
+        Example:
+            >>> await ws.send("Hello async WebSocket")
+        """
         payload = message.encode("utf-8")
         header = b"\x81"
         length = len(payload)
@@ -192,6 +318,20 @@ class AsyncWebSocketConnection:
         await self.writer.drain()
 
     async def recv(self) -> str:
+        """
+        Receive a UTF-8 text message asynchronously.
+
+        Returns:
+            str: The received message, or an empty string on disconnect.
+
+        Raises:
+            asyncio.IncompleteReadError: If the socket closes mid-frame.
+            UnicodeDecodeError: If the message cannot be decoded.
+
+        Example:
+            >>> message = await ws.recv()
+            >>> print(message)
+        """
         first2 = await self.reader.readexactly(2)
         if not first2:
             self.open = False
@@ -214,6 +354,17 @@ class AsyncWebSocketConnection:
             return data.decode("utf-8")
 
     async def close(self):
+        """
+        Close the asynchronous WebSocket connection gracefully.
+
+        Sends a close frame and closes the writer stream.
+
+        Raises:
+            ConnectionError: If the writer fails to send the close frame.
+
+        Example:
+            >>> await ws.close()
+        """
         try:
             self.writer.write(b"\x88\x00")
             await self.writer.drain()
@@ -226,6 +377,30 @@ class AsyncWebSocketConnection:
 async def async_connect_websocket(
     host: str, port: int, resource: str = "/", headers: Optional[Dict[str, str]] = None
 ) -> AsyncWebSocketConnection:
+    """
+    Connect to a WebSocket server asynchronously.
+
+    Performs a WebSocket handshake and returns an AsyncWebSocketConnection.
+
+    Args:
+        host (str): Server hostname or IP.
+        port (int): Port number.
+        resource (str): Path component (default is "/").
+        headers (dict, optional): Additional handshake headers.
+
+    Returns:
+        AsyncWebSocketConnection: A usable async connection object.
+
+    Raises:
+        ConnectionError: If the handshake fails.
+        asyncio.CancelledError: If the coroutine is cancelled mid-connection.
+
+    Example:
+        >>> ws = await async_connect_websocket("localhost", 8765)
+        >>> await ws.send("ping")
+        >>> print(await ws.recv())
+        >>> await ws.close()
+    """
     import os
 
     reader, writer = await asyncio.open_connection(host, port)

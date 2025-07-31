@@ -59,7 +59,7 @@ asyncio.run(run())
 - Messages are UTF‑8 strings.
 - Servers support threading by default.
 
-## Quick Links
+## Related Topics
 
 - [Using the CLI](cli.md)
 - [API Reference](reference.md)

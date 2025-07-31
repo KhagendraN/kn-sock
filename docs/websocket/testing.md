@@ -69,7 +69,7 @@ test_websocket_echo()
 
 You can adapt IP addresses or messages as needed, but this serves as a helpful baseline for smoke tests or support.
 
-## Quick Links
+## Related Topics
 
 - [Using the CLI](cli.md)
 - [Using the Python API](python-api.md)

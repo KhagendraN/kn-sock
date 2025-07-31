@@ -105,7 +105,7 @@ send_udp_multicast("224.0.0.1", 9003, "Multicast Hello")
 
 Having trouble with the CLI? See [Using the CLI](cli.md).
 
-## Next Steps
+## Related Topics
 
 - [Using the Python API](python-api.md)
 - [API Reference](reference.md)

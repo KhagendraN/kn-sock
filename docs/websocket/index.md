@@ -85,7 +85,7 @@ asyncio.run(main())
 | EOFError inside recv() | Client closed socket mid‑frame |
 | UnicodeDecodeError on recv() | Non‑UTF‑8 payload received |
 
-## Quick Links
+## Related Topics
 
 - [Using the CLI](cli.md)
 - [Using the Python API](python-api.md)

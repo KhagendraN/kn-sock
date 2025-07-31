@@ -3,7 +3,7 @@
 Use the `knsock interactive` shell to connect to multiple TCP endpoints and test message flows live. This tool is helpful for demos, debugging, and exploring server behavior during development.
 
 !!! note
-    Currently supports only TCP. WebSocket or UDP extensions may be added later.
+    Currently supports only [TCP](../tcp/index.md). WebSocket or UDP extensions may be added later.
 
 ## Features
 
@@ -37,21 +37,28 @@ python3 -m kn_sock.interactive_cli
 
 ## Before You Start
 
-The interactive CLI connects to existing TCP servers. To test it locally, start a simple TCP echo server using the Python API:
+The interactive CLI connects to existing TCP servers.
+To test it locally, create a simple TCP echo server using the Python API:
 
 ```python
 # echo_server.py
 from kn_sock import start_tcp_server
 
-def echo(conn, addr):
-    while True:
-        data = conn.recv(1024)
-        if not data:
-            break
+def echo(data, addr, conn):
+    print(f"Connection from {addr}")
+    try:
+        print(f"Received: {data}")
         conn.sendall(b"Echo: " + data)
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        conn.close()
+        print(f"Closed connection to {addr}")
 
-start_tcp_server(9000, echo)
+start_tcp_server(9001, echo, host="0.0.0.0")
 ```
+!!! note
+    You can also use the prebuilt `echo_server.py` file included in the project root for testing. It uses the same handler function shown above and listens on port 9001.
 
 Run it in a separate terminal:
 
@@ -59,35 +66,38 @@ Run it in a separate terminal:
 python3 echo_server.py
 ```
 
-Now launch the CLI:
+Then launch the interactive CLI in another terminal:
 
 ```bash
 python3 -m kn_sock.interactive_cli
 ```
 
-And try:
+And try the following:
 
-```
-(kn-sock) connect local 127.0.0.1 9000
+```perl
+(kn-sock) connect local 127.0.0.1 9001
 (kn-sock) send hello
 (kn-sock) receive
 ```
 
 ## Example Session
 
-```
-(kn-sock) connect local 127.0.0.1 9000
-Connected to 127.0.0.1:9000 as "local".
+```pgsql
+(kn-sock) connect local 127.0.0.1 9001
+Connected to 127.0.0.1:9001 as "local".
 
-(kn-sock) send Hello TCP
+(kn-sock) send hello
 Message sent.
 
 (kn-sock) receive
-Received: Echo: Hello TCP
+Received: Echo: hello
 
 (kn-sock) quit
 Exiting kn-sock interactive CLI.
 ```
+
+!!! info
+    The `echo_server.py` handler closes the connection after replying. For persistent sessions, modify the handler to keep the connection open.
 
 ## When to Use
 
@@ -100,6 +110,6 @@ Use the interactive shell when you want to:
 
 ## Related Pages
 
-- TCP Python API
-- TCP CLI Reference
-- TCP Testing
+- [TCP Python API](../tcp/python-api.md)
+- [TCP CLI Reference](../tcp/cli.md)
+- [TCP Testing](../tcp/testing.md)

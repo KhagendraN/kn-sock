@@ -24,3 +24,9 @@ docker-compose run --rm knsock http-get 172.18.0.2 8000 /
 ```
 
 Verify that the response is 200 OK and that the expected body appears.
+
+### Related Topics
+
+* **[CLI commands](cli.md)**
+* **[Python API](python-api.md)**
+* **[Reference](reference.md)**

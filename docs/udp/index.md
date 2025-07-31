@@ -24,7 +24,7 @@ Use these tools to build, test, and automate UDP-based communication in your scr
 
 For reliable or ordered delivery, consider using [TCP Utilities](../tcp/index.md).
 
-## Quick Links
+## Related Topics
 
 - [Using the CLI](cli.md)
 - [Using the Python API](python-api.md)

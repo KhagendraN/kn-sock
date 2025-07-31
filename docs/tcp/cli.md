@@ -1,4 +1,4 @@
-# Using the CLI
+# TCP: Using the CLI
 
 The `knsock` command-line interface allows you to start TCP servers and send messages over TCP directly from the shell. It's ideal for testing or scripting quick network interactions without writing Python code.
 
@@ -95,6 +95,6 @@ Use this IP as the `<host>` value when calling `send-tcp`.
 
 ## Related Topics
 
-- [Using the Python API](#)
-- [Full TCP Function Reference](#)
-- [Testing Instructions](#)
+- [Using the Python API](python-api.md)
+- [Full TCP Function Reference](reference.md)
+- [Testing Instructions](testing.md)

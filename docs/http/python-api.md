@@ -85,3 +85,9 @@ Use the Python API when:
 - You’re scripting interactions or chaining together HTTP utilities
 
 For CLI usage, see the [CLI commands page](cli.md).
+
+### Related Topics
+
+* **[CLI commands](cli.md)**
+* **[Reference](reference.md)**
+* **[Testing & Troubleshooting](testing.md)**

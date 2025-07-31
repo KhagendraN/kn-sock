@@ -1,4 +1,4 @@
-# Using the CLI
+# HTTP: Using the CLI
 
 ## CLI Commands
 
@@ -82,63 +82,8 @@ Same as above, but with HTTPS.
 | `<path>` | Path for GET/POST (for example, /) |
 | `<data>` | Data to POST (as a string) |
 
-```python
-### docs/http/python-api.md
-# Using the Python API
+### Related Topics
 
-### Start an HTTP Server
-```python
-from kn_sock import start_http_server
-
-def my_route_handler(request):
-    if request.path == "/hello":
-        return (200, "text/plain", b"Hello, world!")
-    return (404, "text/plain", b"Not found")
-
-start_http_server(8000, routes={"/hello": my_route_handler})
-```
-
-### HTTP GET/POST (Client)
-```python
-from kn_sock import http_get, http_post
-
-# GET request
-status, headers, body = http_get("127.0.0.1", 8000, "/")
-
-# POST request
-status, headers, body = http_post("127.0.0.1", 8000, "/", "name=knsock")
-```
-
-### Sample Output
-**HTTP server terminal**
-
-```csharp
-[HTTP][SYNC] Serving on 0.0.0.0:8000
-[HTTP][SERVER] GET / from ('172.18.0.1', 55123)
-```
-
-**Client terminal**
-
-```less
-[HTTP][CLIENT] GET http://172.18.0.2:8000/
-HTTP/1.1 200 OK
-Content-Type: text/plain
-Content-Length: 14
-
-Hello, world!
-```
-
-```yaml
-### docs/http/reference.md
-# API Reference
-
-::: kn_sock.http
-    handler: python
-    options:
-      members:
-        - start_http_server
-        - http_get
-        - http_post
-        - https_get
-        - https_post
-```
+* **[Python API](python-api.md)**
+* **[Reference](reference.md)**
+* **[Testing & Troubleshooting](testing.md)**

@@ -45,6 +45,8 @@ nav:
       - Troubleshooting: api/troubleshooting.md
   - Guides:
       - Interactive TCP Shell: guides/interactive_cli.md
+  - Command-Line Interface:
+      - Overview: cli/index.md
   - HTTP:
       - Overview: http/index.md
       - Using the CLI: http/cli.md
@@ -70,7 +72,7 @@ nav:
     - API Reference: udp/reference.md
     - Testing: udp/testing.md
   - Archive:
-    - HTTP: api/http.md
+    - HTTP: archive/http.md
     - TCP: archive/tcp.md
     - UDP: archive/udp.md
     - WebSocket: archive/websocket.md

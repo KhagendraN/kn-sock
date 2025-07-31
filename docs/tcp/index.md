@@ -23,7 +23,7 @@ Choose the interface that suits your workflow:
 | [start_async_ssl_tcp_server](reference.md#kn_sock.tcp.start_async_ssl_tcp_server) | Async TLS server using `asyncio`. |
 | [send_ssl_tcp_message_async](reference.md#kn_sock.tcp.send_ssl_tcp_message_async) | Async TLS client using non-blocking secure sockets. |
 
-## Quick Links
+## Related Topics
 
 - [Using the CLI](cli.md)
 - [Using the Python API](python-api.md)

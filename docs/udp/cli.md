@@ -1,4 +1,4 @@
-# Using the CLI
+# UDP: Using the CLI
 
 The `knsock` command‑line interface now includes a set of **synchronous** UDP commands for rapid testing and lightweight messaging.
 

@@ -1,4 +1,4 @@
-# Using the CLI
+# Websocket: Using the CLI
 
 `kn‑sock` exposes basic WebSocket helpers under the `knsock websocket` namespace.
 They are thin wrappers around the Python API, ideal for smoke tests or shell
@@ -56,7 +56,7 @@ Output:
 !!! note
     These commands are wrappers around `start_websocket_server()` and `connect_websocket()`. For advanced workflows, see [Using the Python API](python-api.md).
 
-## Quick Links
+## Related Topics
 
 - [Using the Python API](python-api.md)
 - [API Reference](reference.md)

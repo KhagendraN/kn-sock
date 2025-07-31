@@ -12,9 +12,9 @@ kn-sock makes it easy to create minimal HTTP servers, issue GET/POST requests, a
 | [https_get](reference.md#kn_sock.http.https_get)               | Perform an HTTPS GET request |
 | [https_post](reference.md#kn_sock.http.https_post)             | Perform an HTTPS POST request |
 
-### Next Steps
+### Related Topics
 
-* **[CLI commands](cli.md)** — run servers and issue requests from the terminal  
-* **[Python API](python-api.md)** — integrate calls in code  
-* **[Reference](reference.md)** — full docstrings  
-* **[Testing & Troubleshooting](testing.md)** — manual and automated checks
+* **[CLI commands](cli.md)**
+* **[Python API](python-api.md)**
+* **[Reference](reference.md)**
+* **[Testing & Troubleshooting](testing.md)**

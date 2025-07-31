@@ -55,8 +55,6 @@ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <con
 
 Use the resulting IP address as the host for your client command.
 
----
-
 ## Test 2: Using Python
 
 ### Start the server in one terminal:
@@ -94,8 +92,6 @@ send_tcp_message("127.0.0.1", 8080, "Hello TCP")
 [TCP] Server response: Echo: Hello TCP
 ```
 
----
-
 ## Common Errors
 
 | Error               | Message or Symptom                     | Fix                                      |
@@ -104,8 +100,6 @@ send_tcp_message("127.0.0.1", 8080, "Hello TCP")
 | Server not responding | `ConnectionRefusedError`             | Verify that the server is running and reachable |
 | DNS resolution failed (Docker) | `Name or service not known`          | Use the container IP address instead of the container name |
 | No response or empty output | No logs or messages received         | Confirm that port numbers match and the server is properly configured |
-
----
 
 ## Optional: Add Test Script
 
@@ -127,10 +121,8 @@ except Exception as e:
     print(f"TCP test failed: {e}")
 ```
 
----
+## Related Topics
 
-## Next Steps
-
-- [Using the CLI](#)
-- [Using the Python API](#)
-- [API Reference](#)
+- [Using the CLI](cli.md)
+- [Using the Python API](python-api.md)
+- [API Reference](reference.md)

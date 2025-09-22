@@ -1,12 +1,10 @@
 <p align="center">
-  <img src="kn-sock_logo.png" alt="kn-sock logo" width="128"/>
+  <img src="https://github.com/KhagendraN/kn-sock/blob/main/docs/kn-sock_logo.png" alt="kn-sock logo" width="128"/>
 </p>
 
 # kn-sock
 
 ![PyPI version](https://img.shields.io/pypi/v/kn-sock)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/kn-sock)](https://pypi.org/project/kn-sock/)
-[![GitHub Stars](https://img.shields.io/github/stars/KhagendraN/kn-sock?style=social)](https://github.com/KhagendraN/kn-sock/stargazers)
 
 A simplified socket programming toolkit for Python that makes network communication easy and efficient.
 
@@ -70,53 +68,53 @@ docker-compose run knsock --help
 docker-compose run test
 ```
 
-For detailed Docker usage, see the [Docker guide](docker.md).
+For detailed Docker usage, see the [Docker guide](https://github.com/KhagendraN/kn-sock/blob/main/docs/docker.md).
 
 ## What's Next?
 
-- **[Getting Started](getting-started.md)** - Learn the basics and set up your first project
-- **[Docker Setup](docker.md)** - Get started with Docker containers and deployment
+- **[Getting Started](https://github.com/KhagendraN/kn-sock/blob/main/docs/getting-started.md)** - Learn the basics and set up your first project
+- **[Docker Setup](https://github.com/KhagendraN/kn-sock/blob/main/docs/docker.md)** - Get started with Docker containers and deployment
 
 ### Protocol Documentation
-- **[TCP Protocol](protocols/tcp.md)** - Reliable connection-based communication
-- **[UDP Protocol](protocols/udp.md)** - Fast connectionless messaging
-- **[WebSocket Protocol](protocols/websocket.md)** - Real-time bidirectional communication
-- **[JSON Communication](protocols/json.md)** - Structured data exchange
-- **[File Transfer](protocols/file-transfer.md)** - Efficient file sharing
-- **[Secure TCP (SSL/TLS)](protocols/secure-tcp.md)** - Encrypted communication
+- **[TCP Protocol](https://github.com/KhagendraN/kn-sock/blob/main/docs/protocols/tcp.md)** - Reliable connection-based communication
+- **[UDP Protocol](https://github.com/KhagendraN/kn-sock/blob/main/docs/protocols/udp.md)** - Fast connectionless messaging
+- **[WebSocket Protocol](https://github.com/KhagendraN/kn-sock/blob/main/docs/protocols/websocket.md)** - Real-time bidirectional communication
+- **[JSON Communication](https://github.com/KhagendraN/kn-sock/blob/main/docs/protocols/json.md)** - Structured data exchange
+- **[File Transfer](https://github.com/KhagendraN/kn-sock/blob/main/docs/protocols/file-transfer.md)** - Efficient file sharing
+- **[Secure TCP (SSL/TLS)](https://github.com/KhagendraN/kn-sock/blob/main/docs/protocols/secure-tcp.md)** - Encrypted communication
 
 ### Advanced Features
-- **[Pub/Sub Messaging](advanced/pubsub.md)** - Event-driven messaging patterns
-- **[Remote Procedure Calls](advanced/rpc.md)** - Call remote functions seamlessly
-- **[Live Streaming](advanced/live-streaming.md)** - Multi-video streaming with adaptive bitrate
-- **[Video Chat](advanced/video-chat.md)** - Real-time video conferencing
-- **[HTTP/HTTPS](advanced/http.md)** - Web server and client functionality
+- **[Pub/Sub Messaging](https://github.com/KhagendraN/kn-sock/blob/main/docs/advanced/pubsub.md)** - Event-driven messaging patterns
+- **[Remote Procedure Calls](https://github.com/KhagendraN/kn-sock/blob/main/docs/advanced/rpc.md)** - Call remote functions seamlessly
+- **[Live Streaming](https://github.com/KhagendraN/kn-sock/blob/main/docs/advanced/live-streaming.md)** - Multi-video streaming with adaptive bitrate
+- **[Video Chat](https://github.com/KhagendraN/kn-sock/blob/main/docs/advanced/video-chat.md)** - Real-time video conferencing
+- **[HTTP/HTTPS](https://github.com/KhagendraN/kn-sock/blob/main/docs/advanced/http.md)** - Web server and client functionality
 
 ### Reference & Examples
-- **[API Reference](api-reference.md)** - Complete function and class documentation
-- **[CLI Guide](cli.md)** - Command-line interface usage
-- **[Examples](examples.md)** - Real-world usage examples
-- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+- **[API Reference](https://github.com/KhagendraN/kn-sock/blob/main/docs/api-reference.md)** - Complete function and class documentation
+- **[CLI Guide](https://github.com/KhagendraN/kn-sock/blob/main/docs/cli.md)** - Command-line interface usage
+- **[Examples](https://github.com/KhagendraN/kn-sock/blob/main/docs/examples.md)** - Real-world usage examples
+- **[Troubleshooting](https://github.com/KhagendraN/kn-sock/blob/main/docs/troubleshooting.md)** - Common issues and solutions
 
 ## Network Visibility Tools
 
 ⚠️ **ETHICAL WARNING**: These tools are intended for use in authorized networks such as schools, labs, or controlled IT environments. Monitoring user traffic may be illegal without explicit consent. Use responsibly and ethically.
 
 ### Network Monitoring
-- **[ARP Scanning](network/arp.md)** - Discover active devices on your network
-- **[MAC Address Lookup](network/maclookup.md)** - Identify device vendors by MAC address
-- **[DNS Monitoring](network/monitor.md)** - Monitor and analyze DNS requests
+- **[ARP Scanning](https://github.com/KhagendraN/kn-sock/blob/main/docs/network/arp.md)** - Discover active devices on your network
+- **[MAC Address Lookup](https://github.com/KhagendraN/kn-sock/blob/main/docs/network/maclookup.md)** - Identify device vendors by MAC address
+- **[DNS Monitoring](https://github.com/KhagendraN/kn-sock/blob/main/docs/network/monitor.md)** - Monitor and analyze DNS requests
 
 ## Examples
 
 Check out our comprehensive examples and real-world applications:
 
 ### Basic Examples
-- **[Basic Examples](examples.md)** - Simple server/client implementations
-- **[Protocol Examples](examples/)** - TCP, UDP, WebSocket, and more implementations
+- **[Basic Examples](https://github.com/KhagendraN/kn-sock/blob/main/docs/examples.md)** - Simple server/client implementations
+- **[Protocol Examples](https://github.com/KhagendraN/kn-sock/blob/main/docs/examples/)** - TCP, UDP, WebSocket, and more implementations
 
 ### Real-world Applications
-- **[Real-world Examples](real_world_examples/)** - Complete applications and use cases:
+- **[Real-world Examples](https://github.com/KhagendraN/kn-sock/blob/main/docs/real_world_examples/)** - Complete applications and use cases:
   - Chat applications with multiple protocols
   - File transfer systems with progress tracking
   - IoT device communication networks

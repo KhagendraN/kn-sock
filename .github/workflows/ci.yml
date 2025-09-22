@@ -47,7 +47,7 @@ jobs:
       # Ensure dependencies are not reinstalled unless requirements.txt changes
 
       - name: Run tests with pytest
-        run: pytest --cov=kn_sock --cov-report=xml
+        run: pytest test/ --cov=kn_sock --cov-report=xml
         timeout-minutes: 10
 
       - name: Upload coverage to Codecov

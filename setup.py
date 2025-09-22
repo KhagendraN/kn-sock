@@ -10,7 +10,7 @@ with open(os.path.join(this_dir, "docs", "index.md"), encoding="utf-8") as f:
 
 setup(
     name="kn-sock",
-    version="0.3.1a1",
+    version="0.3.1a2",
     packages=find_packages(),
     entry_points={
         "console_scripts": [

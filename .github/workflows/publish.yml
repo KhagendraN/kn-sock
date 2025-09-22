@@ -3,7 +3,7 @@ name: Publish Pre-release to TestPyPI
 on:
   push:
     tags:
-      - 'v*'  # Triggers on tags like v1.0.0a1, v2.1.0b2, etc.
+      - 'v*'  # Triggers on version tags like v1.0.0a1, v2.1.0b2, etc.
 
 jobs:
   build-and-publish:

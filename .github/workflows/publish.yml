@@ -28,3 +28,14 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }} # add to github
         run: twine upload --repository testpypi dist/* 
+
+      - name: Discord notification
+        if: always()
+        uses: Ilshidur/action-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          message: |
+            🚀 Publish workflow completed!
+            Status: ${{ job.status }}
+            Ref: ${{ github.ref }}
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

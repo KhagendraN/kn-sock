@@ -1,8 +1,6 @@
-<p align="center">
-  <img src="https://github.com/KhagendraN/kn-sock/blob/main/docs/kn-sock_logo.png" alt="kn-sock logo" width="128"/>
-</p>
 
 # kn-sock
+- **[Documentation](https://kn-sock.khagendraneupane.com.np/)** 
 
 ![PyPI version](https://img.shields.io/pypi/v/kn-sock)
 

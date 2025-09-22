@@ -37,22 +37,12 @@ jobs:
 
       - name: 🔔 Notify Discord (Success)
         if: success()
-        uses: tsickert/discord-webhook-action@v1.0.0
+        uses: Ilshidur/action-discord@master
         with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          content: |
-            ✅ **Publish succeeded!**
-            📦 Tag: `${{ github.ref_name }}`
-            📁 Package: kn-sock
-            🔗 [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          args: "${{ secrets.DISCORD_WEBHOOK }} ✅ **Publish succeeded!**\n📦 Tag: ${{ github.ref_name }}\n📁 Package: kn-sock\n🔗 [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
       - name: 🔔 Notify Discord (Failure)
         if: failure()
-        uses: tsickert/discord-webhook-action@v1.0.0
+        uses: Ilshidur/action-discord@master
         with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          content: |
-            ❌ **Publish failed!**
-            📦 Tag: `${{ github.ref_name }}`
-            📁 Package: kn-sock
-            🔗 [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          args: "${{ secrets.DISCORD_WEBHOOK }} ❌ **Publish failed!**\n📦 Tag: ${{ github.ref_name }}\n📁 Package: kn-sock\n🔗 [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"

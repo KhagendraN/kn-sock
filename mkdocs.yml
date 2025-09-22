@@ -1,34 +1,128 @@
-site_name: kn-sock
-site_url: https://kn-sock.khagendraneupane.com.np
+site_name: kn-sock Documentation
+site_description: Comprehensive documentation for kn-sock - A simplified socket programming toolkit for Python with TCP/UDP, WebSockets, RPC, Pub/Sub, and more
+site_author: KhagendraN
+site_url: https://khagendran.github.io/kn-sock/
+
+repo_name: KhagendraN/kn-sock
 repo_url: https://github.com/KhagendraN/kn-sock
-nav:
-  - Home: index.md
-  - Examples:
-      - Live Streaming Server: examples/server_live.py
-      - Live Streaming Client: examples/client_live.py
-      - TCP Server: examples/tcp_server.py
-      - TCP Client: examples/tcp_client.py
-      - UDP Server: examples/udp_server.py
-      - UDP Client: examples/udp_client.py
-      - HTTP Server: examples/http_server.py
-      - HTTP Client: examples/http_client.py
-      - HTTPS Client: examples/https_client.py
-      - WebSocket Server: examples/websocket_server.py
-      - WebSocket Client: examples/websocket_client.py
-      - PubSub Server: examples/pubsub_server.py
-      - PubSub Client: examples/pubsub_client.py
-      - RPC Server: examples/rpc_server.py
-      - RPC Client: examples/rpc_client.py
-      - Browse All: examples/
-  - Real World Examples:
-      - IoT Protocol: real_world_examples/iot_protocol.py
-      - File Transfer: real_world_examples/file_transfer.py
-      - Chat Application: real_world_examples/chat_app.py
-      - Microservice RPC: real_world_examples/microservice_rpc.py
-      - Remote Control: real_world_examples/remote_control.py
-      - HTTP API Server: real_world_examples/http_api_server.py
-      - Live Streaming: real_world_examples/live_streaming.py
-      - Test Utilities: real_world_examples/test_utilities.py
+edit_uri: edit/main/docs/
+
 theme:
   name: material
   logo: kn-sock_logo.png
+  favicon: kn-sock_logo.png
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.instant
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/KhagendraN/kn-sock
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/kn-sock/
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - meta
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Docker Setup: docker.md
+  - Configuration: configuration.md
+  - Protocols:
+    - TCP: protocols/tcp.md
+    - UDP: protocols/udp.md
+    - WebSocket: protocols/websocket.md
+    - JSON: protocols/json.md
+    - File Transfer: protocols/file-transfer.md
+    - Secure TCP (SSL/TLS): protocols/secure-tcp.md
+  - Advanced Features:
+    - Pub/Sub Messaging: advanced/pubsub.md
+    - Remote Procedure Calls: advanced/rpc.md
+    - Live Streaming: advanced/live-streaming.md
+    - Video Chat: advanced/video-chat.md
+    - HTTP/HTTPS: advanced/http.md
+  - Network Visibility:
+    - ARP Scanning: network/arp.md
+    - MAC Address Lookup: network/maclookup.md
+    - DNS Monitoring: network/monitor.md
+  - Reference & Guides:
+    - API Reference: api-reference.md
+    - CLI Guide: cli.md
+    - Examples: examples.md
+    - Troubleshooting: troubleshooting.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

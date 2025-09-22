@@ -22,6 +22,7 @@ from kn_sock.video_chat import VideoChatServer, VideoChatClient
 import os
 import time
 from kn_sock import interactive_cli
+from kn_sock.network import arp_scan, mac_lookup, monitor_dns
 
 
 def tcp_echo_handler(data, addr, conn):
@@ -324,6 +325,29 @@ def run_cli():
 
     # Interactive CLI subcommand
     subparsers.add_parser("interactive", help="Start the interactive kn-sock CLI")
+
+    # --------------------------
+    # Network monitoring commands
+    # --------------------------
+    # ARP scan
+    scan_cmd = subparsers.add_parser("scan", help="Scan network for devices using ARP")
+    scan_cmd.add_argument("range", type=str, help="Network range to scan (e.g., 192.168.1.0/24)")
+    scan_cmd.add_argument("--interface", type=str, default=None, help="Network interface to use (auto-detect if not specified)")
+    scan_cmd.add_argument("--timeout", type=int, default=2, help="Timeout in seconds for each ARP request (default: 2)")
+    scan_cmd.add_argument("--verbose", action="store_true", help="Enable verbose output")
+
+    # MAC lookup
+    mac_cmd = subparsers.add_parser("mac-lookup", help="Lookup MAC address vendor information")
+    mac_cmd.add_argument("mac", type=str, help="MAC address to lookup (e.g., 00:1A:2B:3C:4D:5E)")
+    mac_cmd.add_argument("--offline", action="store_true", help="Use offline lookup only (no API calls)")
+    mac_cmd.add_argument("--api-key", type=str, default=None, help="API key for macvendors.co (optional)")
+
+    # DNS monitor
+    monitor_cmd = subparsers.add_parser("monitor", help="Monitor DNS requests on the network")
+    monitor_cmd.add_argument("--duration", type=int, default=60, help="Duration to monitor in seconds (default: 60)")
+    monitor_cmd.add_argument("--interface", type=str, default=None, help="Network interface to monitor (auto-detect if not specified)")
+    monitor_cmd.add_argument("--log", type=str, default=None, help="File to save DNS logs (JSON format)")
+    monitor_cmd.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
     # --------------------------
     # Parse args and run
@@ -653,6 +677,42 @@ def run_cli():
 
     elif args.command == "interactive":
         interactive_cli.KnSockInteractiveCLI().cmdloop()
+
+    # --------------------------
+    # Network monitoring commands
+    # --------------------------
+    elif args.command == "scan":
+        devices = arp_scan(
+            args.range, 
+            interface=args.interface, 
+            timeout=args.timeout, 
+            verbose=args.verbose
+        )
+        print(f"Found {len(devices)} devices:")
+        for d in devices:
+            print(f"  {d['ip']} -> {d['mac']}")
+
+    elif args.command == "mac-lookup":
+        result = mac_lookup(
+            args.mac, 
+            use_api=not args.offline, 
+            api_key=args.api_key
+        )
+        print(f"MAC: {result['mac']}")
+        print(f"OUI: {result['oui']}")
+        print(f"Vendor: {result['vendor']}")
+        print(f"Source: {result['source']}")
+
+    elif args.command == "monitor":
+        results = monitor_dns(
+            duration=args.duration, 
+            interface=args.interface, 
+            log_file=args.log, 
+            verbose=args.verbose
+        )
+        print(f"Captured {len(results)} DNS requests:")
+        for r in results:
+            print(f"  {r['source_ip']} -> {r['domain']} ({r['query_type']})")
 
     else:
         parser.print_help()

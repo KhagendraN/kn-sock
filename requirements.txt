@@ -4,4 +4,4 @@ opencv-python
 numpy
 pyaudio
 ffmpeg-python
-kn-sock
+git+https://github.com/KhagendraN/kn-sock.git

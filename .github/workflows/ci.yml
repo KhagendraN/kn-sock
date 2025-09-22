@@ -15,6 +15,13 @@ jobs:
         python-version: [3.11, 3.12]
 
     steps:
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -37,8 +44,11 @@ jobs:
           pip install -r requirements.txt
           pip install pytest codecov pytest-cov
 
+      # Ensure dependencies are not reinstalled unless requirements.txt changes
+
       - name: Run tests with pytest
         run: pytest --cov=kn_sock --cov-report=xml
+        timeout-minutes: 10
 
       - name: Upload coverage to Codecov
         if: github.secrets.CODECOV_TOKEN != ''
@@ -47,3 +57,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           fail_ci_if_error: false
+
+      - name: CI Finished
+        run: echo "✅ CI workflow completed successfully."

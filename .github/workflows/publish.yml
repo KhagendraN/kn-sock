@@ -32,25 +32,27 @@ jobs:
             )
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}  # Set this in repo secrets
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: twine upload --repository testpypi dist/*
 
       - name: 🔔 Notify Discord (Success)
         if: success()
-        uses: Ilshidur/action-discord@master
+        uses: tsickert/discord-webhook-action@v1.0.0
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          message: |
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: |
             ✅ **Publish succeeded!**
-            📦 Ref: `${{ github.ref }}`
+            📦 Tag: `${{ github.ref_name }}`
+            📁 Package: kn-sock
             🔗 [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: 🔔 Notify Discord (Failure)
         if: failure()
-        uses: Ilshidur/action-discord@master
+        uses: tsickert/discord-webhook-action@v1.0.0
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          message: |
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: |
             ❌ **Publish failed!**
-            📦 Ref: `${{ github.ref }}`
+            📦 Tag: `${{ github.ref_name }}`
+            📁 Package: kn-sock
             🔗 [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})

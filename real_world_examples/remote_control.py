@@ -13,6 +13,7 @@ How to run:
 import sys
 from kn_sock import start_json_server, send_json
 
+
 def server():
     def handler(data, addr, conn):
         print(f"[Server] Received: {data}")
@@ -23,7 +24,9 @@ def server():
             return {"result": "restarting..."}
         else:
             return {"error": "unknown command"}
+
     start_json_server(9400, handler)
+
 
 def client():
     if len(sys.argv) < 3:
@@ -33,6 +36,7 @@ def client():
     response = send_json("localhost", 9400, {"command": cmd})
     print("Server response:", response)
 
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python remote_control.py [server|client <command>]")
@@ -40,4 +44,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "server":
         server()
     else:
-        client() 
+        client()

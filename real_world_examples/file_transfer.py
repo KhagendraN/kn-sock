@@ -14,10 +14,12 @@ import sys
 import os
 from kn_sock import start_file_server, send_file
 
+
 def server():
     save_dir = os.getcwd()
     print(f"[FileServer] Saving files to: {save_dir}")
     start_file_server(9100, save_dir)
+
 
 def client():
     if len(sys.argv) < 3:
@@ -27,6 +29,7 @@ def client():
     send_file("localhost", 9100, file_path)
     print(f"[FileClient] Sent file: {file_path}")
 
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python file_transfer.py [server|client <file_to_send>]")
@@ -34,4 +37,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "server":
         server()
     else:
-        client() 
+        client()

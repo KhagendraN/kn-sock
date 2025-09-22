@@ -9,4 +9,4 @@ if __name__ == "__main__":
     reply = ws.recv()
     print(f"[WebSocket][CLIENT] Received: {reply}")
     ws.close()
-    print("[WebSocket][CLIENT] Connection closed.") 
+    print("[WebSocket][CLIENT] Connection closed.")

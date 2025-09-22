@@ -7,4 +7,4 @@ if __name__ == "__main__":
 
     print("[HTTPS][CLIENT] POST example:")
     body = https_post("httpbin.org", 443, "/post", data="foo=bar&baz=qux")
-    print(body[:200], "...\n") 
+    print(body[:200], "...\n")

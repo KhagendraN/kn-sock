@@ -4,9 +4,11 @@ import threading
 import time
 from kn_sock import start_udp_server
 
+
 def echo_handler(data, addr, sock):
     print(f"[UDP][SERVER] Received from {addr}: {data.decode()}")
     sock.sendto(b"Echo: " + data, addr)
+
 
 if __name__ == "__main__":
     shutdown_event = threading.Event()
@@ -14,7 +16,7 @@ if __name__ == "__main__":
         target=start_udp_server,
         args=(8082, echo_handler),
         kwargs={"shutdown_event": shutdown_event},
-        daemon=True
+        daemon=True,
     )
     server_thread.start()
     print("[UDP][SERVER] Running. Will shutdown in 10 seconds...")

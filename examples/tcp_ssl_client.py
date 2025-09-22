@@ -14,5 +14,5 @@ if __name__ == "__main__":
         cafile=CAFILE,
         certfile=CERTFILE,
         keyfile=KEYFILE,
-        verify=True
-    ) 
+        verify=True,
+    )

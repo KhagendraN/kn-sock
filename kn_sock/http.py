@@ -2,7 +2,7 @@ import socket
 import ssl
 import os
 import threading
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, Tuple
 
 
 def http_get(
@@ -160,7 +160,7 @@ def start_http_server(
     host: str,
     port: int,
     static_dir: Optional[str] = None,
-    routes: Optional[Dict[str, Callable]] = None,
+    routes: Optional[Dict[Tuple[str, str], Callable]] = None,
     shutdown_event: Optional[threading.Event] = None,
 ):
     """

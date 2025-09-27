@@ -194,23 +194,21 @@ Clients send JSON feedback for adaptive quality:
 |-----------|-------------|---------|
 | `video_paths` | List of video file paths | Required |
 | `host` | Host to bind | '0.0.0.0' |
-| `video_port` | Port for video stream | 9000 |
-| `audio_port` | Port for audio stream | 9001 |
-| `control_port` | Port for control messages | 9010 |
-| `video_fps` | Target video FPS | 30 |
-| `jpeg_quality` | Initial JPEG quality | 70 |
+| `video_port` | Port for video stream | 8000 |
+| `audio_port` | Port for audio stream | 8001 |
+| `control_port` | Port for control messages | video_port + 10 |
 
-### Client Configuration
+### Client Configuration  
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `host` | Server host | Required |
-| `video_port` | Video stream port | 9000 |
-| `audio_port` | Audio stream port | 9001 |
-| `control_port` | Control port | 9010 |
-| `video_buffer_ms` | Video buffer size | 200 |
-| `audio_buffer_ms` | Audio buffer size | 100 |
-| `video_fps` | Target FPS | 30 |
+| `host` | Server host | '127.0.0.1' |
+| `video_port` | Video stream port | 8000 |
+| `audio_port` | Audio stream port | 8001 |
+| `control_port` | Control port | video_port + 10 |
+| `video_buffer_ms` | Video buffer size (ms) | 200 |
+| `audio_buffer_ms` | Audio buffer size (ms) | 200 |
+| `video_fps` | Target video FPS | 30 |
 
 ## Use Cases
 
@@ -251,34 +249,63 @@ for room_name, videos, port_base in rooms:
 
 ### Adaptive Quality Streaming
 
+The `LiveStreamServer` includes built-in adaptive quality streaming. The server automatically adjusts JPEG quality (40-90%) based on client buffer feedback sent through the control port.
+
 ```python
 from kn_sock.live_stream import LiveStreamServer
+import time
 
-class AdaptiveStreamServer(LiveStreamServer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.client_qualities = {}  # Track quality per client
-    
-    def adjust_quality_for_client(self, client_addr, buffer_level):
-        """Adjust video quality based on client buffer"""
-        current_quality = self.client_qualities.get(client_addr, 70)
-        
-        if buffer_level < 0.1:  # Low buffer
-            new_quality = max(40, current_quality - 10)
-        elif buffer_level > 0.8:  # High buffer
-            new_quality = min(90, current_quality + 5)
-        else:
-            new_quality = current_quality
-        
-        self.client_qualities[client_addr] = new_quality
-        return new_quality
-
-server = AdaptiveStreamServer(
+# Start server with adaptive quality enabled
+server = LiveStreamServer(
     video_paths=["movie.mp4"],
     host='0.0.0.0',
-    video_port=9000
+    video_port=9000,
+    audio_port=9001,
+    control_port=9010  # Control port for adaptive quality feedback
 )
+
+print("Starting adaptive quality live stream server...")
+print("Server will automatically adjust quality based on client feedback:")
+print("  - Low buffer (< 10%): Reduce quality to improve streaming")
+print("  - High buffer (> 30%): Increase quality for better experience")
+
 server.start()
+```
+
+### Multi-Video Room Setup
+
+```python
+from kn_sock.live_stream import LiveStreamServer
+import threading
+
+def start_room(room_name, videos, port_base):
+    """Start a streaming room with multiple videos"""
+    server = LiveStreamServer(
+        video_paths=videos,
+        host='0.0.0.0',
+        video_port=port_base,
+        audio_port=port_base + 1,
+        control_port=port_base + 10
+    )
+    
+    print(f"Room '{room_name}' starting on ports {port_base}-{port_base+10}")
+    print(f"Available videos: {videos}")
+    server.start()
+
+# Start multiple streaming rooms
+rooms = [
+    ("Action Movies", ["action1.mp4", "action2.mp4"], 9000),
+    ("Documentaries", ["doc1.mp4", "doc2.mp4"], 9100),
+    ("Comedy", ["comedy1.mp4", "comedy2.mp4"], 9200)
+]
+
+for room_name, videos, port_base in rooms:
+    thread = threading.Thread(
+        target=start_room,
+        args=(room_name, videos, port_base),
+        daemon=True
+    )
+    thread.start()
 ```
 
 ### Bandwidth Monitoring
@@ -286,25 +313,34 @@ server.start()
 ```python
 from kn_sock.live_stream import LiveStreamClient
 import time
+import threading
 
 class MonitoredClient(LiveStreamClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bytes_received = 0
         self.start_time = time.time()
+        self._monitoring = True
+        
+        # Start monitoring thread
+        self.monitor_thread = threading.Thread(target=self._monitor_bandwidth, daemon=True)
+        self.monitor_thread.start()
     
-    def on_video_frame(self, frame_data):
-        """Called when video frame is received"""
-        self.bytes_received += len(frame_data)
-        self.log_bandwidth()
+    def _monitor_bandwidth(self):
+        """Monitor bandwidth usage in background thread"""
+        while self._monitoring and self._running.is_set():
+            time.sleep(5)  # Check every 5 seconds
+            elapsed = time.time() - self.start_time
+            if elapsed > 0:
+                bandwidth_mbps = (self.bytes_received * 8) / (elapsed * 1024 * 1024)
+                print(f"Current bandwidth: {bandwidth_mbps:.2f} Mbps")
     
-    def log_bandwidth(self):
-        """Log current bandwidth usage"""
-        elapsed = time.time() - self.start_time
-        if elapsed > 0:
-            bandwidth_mbps = (self.bytes_received * 8) / (elapsed * 1024 * 1024)
-            print(f"Current bandwidth: {bandwidth_mbps:.2f} Mbps")
+    def stop(self):
+        """Override stop to disable monitoring"""
+        self._monitoring = False
+        super().stop()
 
+# Usage
 client = MonitoredClient(
     host='192.168.1.10',
     video_port=9000,
@@ -335,23 +371,43 @@ client = LiveStreamClient(
 )
 ```
 
-### Quality Optimization
+### Quality Configuration
 
 ```python
-# Server with quality optimization
+# Server with multiple videos for selection
 server = LiveStreamServer(
-    video_paths=["video.mp4"],
-    video_fps=30,
-    jpeg_quality=80,  # Higher initial quality
-    adaptive_quality=True
+    video_paths=["low_quality.mp4", "medium_quality.mp4", "high_quality.mp4"],
+    host='0.0.0.0',
+    video_port=9000,
+    audio_port=9001,
+    control_port=9010  # Control port for adaptive quality
+)
+server.start()
+
+# Client configuration for different network conditions
+# Note: Quality adaptation is handled automatically by the server
+# based on client feedback sent through the control port
+
+# For high-latency networks - larger buffers
+client = LiveStreamClient(
+    host='remote-server.com',
+    video_port=9000,
+    audio_port=9001,
+    control_port=9010,
+    video_buffer_ms=500,  # Larger buffer for stability
+    audio_buffer_ms=200,
+    video_fps=24  # Lower FPS can help with bandwidth
 )
 
-# Client with quality preferences
+# For low-latency requirements - smaller buffers  
 client = LiveStreamClient(
-    host='server',
+    host='local-server',
     video_port=9000,
-    max_quality=85,  # Maximum quality preference
-    min_quality=50   # Minimum quality preference
+    audio_port=9001,
+    control_port=9010,
+    video_buffer_ms=100,  # Smaller buffer for lower latency
+    audio_buffer_ms=50,
+    video_fps=30  # Standard FPS
 )
 ```
 

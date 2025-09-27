@@ -64,18 +64,21 @@ except KeyboardInterrupt:
 ```python
 from kn_sock.video_chat import VideoChatServer
 
+# Server supports only basic configuration parameters
 server = VideoChatServer(
     host='0.0.0.0',
     video_port=9000,
     audio_port=9001,
-    text_port=9002,
-    max_clients_per_room=10,
-    enable_audio=True,
-    enable_video=True,
-    video_quality=70,
-    audio_sample_rate=44100
+    text_port=9002
 )
 server.start()
+
+print("Video chat server started:")
+print(f"  - Video port: {server.video_port}")  
+print(f"  - Audio port: {server.audio_port}")
+print(f"  - Text chat port: {server.text_port}")
+print("  - Supports multiple rooms")
+print("  - Users can join with custom nicknames")
 ```
 
 ### Custom Client Configuration
@@ -83,6 +86,7 @@ server.start()
 ```python
 from kn_sock.video_chat import VideoChatClient
 
+# Client configuration with available parameters
 client = VideoChatClient(
     server_ip='192.168.1.10',
     video_port=9000,
@@ -90,14 +94,10 @@ client = VideoChatClient(
     text_port=9002,
     room='conference',
     nickname='john',
-    enable_audio=True,
-    enable_video=True,
-    video_width=640,
-    video_height=480,
-    audio_channels=1,
-    audio_sample_rate=44100
+    enable_audio=True  # Enable/disable audio functionality
 )
 client.start()
+```
 ```
 
 ## Client Controls
@@ -151,8 +151,7 @@ def start_conference_room(room_name, port_base):
         host='0.0.0.0',
         video_port=port_base,
         audio_port=port_base + 1,
-        text_port=port_base + 2,
-        max_clients_per_room=20
+        text_port=port_base + 2
     )
     
     print(f"Starting conference room '{room_name}' on ports {port_base}, {port_base+1}, {port_base+2}")
@@ -177,77 +176,119 @@ for room_name, port_base in rooms:
 
 ### Classroom Video Chat
 
+### Group Video Chat Example
+
 ```python
 from kn_sock.video_chat import VideoChatClient
+import threading
+import time
 
-class ClassroomClient(VideoChatClient):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_teacher = kwargs.get('is_teacher', False)
+def start_group_client(room, nickname, server_ip='192.168.1.10'):
+    """Start a video chat client for group communication"""
+    client = VideoChatClient(
+        server_ip=server_ip,
+        video_port=9000,
+        audio_port=9001,
+        text_port=9002,
+        room=room,
+        nickname=nickname,
+        enable_audio=True
+    )
     
-    def on_message_received(self, sender, message):
-        """Handle incoming messages"""
-        if self.is_teacher:
-            # Teachers can see all messages
-            print(f"[{sender}]: {message}")
-        else:
-            # Students only see teacher messages and their own
-            if sender == "teacher" or sender == self.nickname:
-                print(f"[{sender}]: {message}")
+    print(f"Starting {nickname} in room '{room}'")
+    client.start()
     
-    def on_user_joined(self, nickname):
-        """Handle user joining"""
-        if self.is_teacher:
-            print(f"Student {nickname} joined the class")
-        else:
-            print(f"User {nickname} joined")
+    # Keep client running
+    try:
+        while client.running:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print(f"{nickname} is leaving the chat")
+        client.stop()
 
-# Teacher client
-teacher = ClassroomClient(
-    server_ip='192.168.1.10',
-    room='math101',
-    nickname='teacher',
-    is_teacher=True
-)
-teacher.start()
+# Start multiple clients for group chat
+participants = [
+    ("meeting_room", "alice"),
+    ("meeting_room", "bob"), 
+    ("meeting_room", "charlie")
+]
 
-# Student client
-student = ClassroomClient(
-    server_ip='192.168.1.10',
-    room='math101',
-    nickname='student1',
-    is_teacher=False
-)
-student.start()
+threads = []
+for room, nickname in participants:
+    thread = threading.Thread(
+        target=start_group_client,
+        args=(room, nickname),
+        daemon=True
+    )
+    thread.start()
+    threads.append(thread)
+    time.sleep(1)  # Stagger connections
+
+# Keep main thread alive
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Shutting down group chat")
 ```
 
-### Family Video Chat
+### Multiple Room Setup
 
 ```python
-from kn_sock.video_chat import VideoChatClient
+from kn_sock.video_chat import VideoChatServer
+import threading
+import time
 
-class FamilyChatClient(VideoChatClient):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.family_members = kwargs.get('family_members', [])
+def start_room_server(room_config):
+    """Start a video chat server for a specific room configuration"""
+    room_name, port_base = room_config
     
-    def on_user_joined(self, nickname):
-        """Welcome family members"""
-        if nickname in self.family_members:
-            self.send_message(f"Welcome back, {nickname}!")
-        else:
-            self.send_message(f"Welcome, {nickname}!")
+    server = VideoChatServer(
+        host='0.0.0.0',
+        video_port=port_base,
+        audio_port=port_base + 1,
+        text_port=port_base + 2
+    )
     
-    def on_user_left(self, nickname):
-        """Say goodbye to family members"""
-        if nickname in self.family_members:
-            self.send_message(f"See you later, {nickname}!")
+    print(f"Starting room '{room_name}' on ports {port_base}, {port_base+1}, {port_base+2}")
+    server.start()
+    
+    # Keep server running
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print(f"Room '{room_name}' shutting down")
 
-# Family members
-family_members = ["mom", "dad", "sister", "brother"]
+# Configure multiple rooms
+room_configs = [
+    ("General", 9000),
+    ("Engineering", 9100), 
+    ("Sales", 9200),
+    ("Support", 9300)
+]
 
-# Create family chat client
-family_client = FamilyChatClient(
+# Start each room in its own thread
+for room_config in room_configs:
+    thread = threading.Thread(
+        target=start_room_server,
+        args=(room_config,),
+        daemon=True
+    )
+    thread.start()
+
+print("All video chat rooms started!")
+print("Available rooms:")
+for room_name, port_base in room_configs:
+    print(f"  - {room_name}: video={port_base}, audio={port_base+1}, text={port_base+2}")
+
+# Keep main process alive
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Shutting down all rooms")
+```
     server_ip='192.168.1.10',
     room='family',
     nickname='me',
@@ -256,64 +297,85 @@ family_client = FamilyChatClient(
 family_client.start()
 ```
 
-## Performance Optimization
+## Configuration Details
 
-### Bandwidth Optimization
+### Server Configuration
+
+The `VideoChatServer` uses predefined settings optimized for real-time communication:
 
 ```python
-from kn_sock.video_chat import VideoChatClient
+from kn_sock.video_chat import VideoChatServer
 
-# For slow connections
-client = VideoChatClient(
-    server_ip='remote-server.com',
-    room='meeting',
-    nickname='user',
-    video_width=320,  # Lower resolution
-    video_height=240,
-    video_quality=50,  # Lower quality
-    enable_audio=True,
-    enable_video=True
+# Server configuration (settings are fixed for optimal performance)
+server = VideoChatServer(
+    host='0.0.0.0',        # Host to bind to
+    video_port=9000,       # Port for video stream
+    audio_port=9001,       # Port for audio stream  
+    text_port=9002         # Port for text chat
 )
 
-# For high-quality connections
-client = VideoChatClient(
-    server_ip='local-server',
-    room='meeting',
-    nickname='user',
-    video_width=1280,  # Higher resolution
-    video_height=720,
-    video_quality=90,  # Higher quality
-    enable_audio=True,
-    enable_video=True
-)
+print("Video chat server configuration:")
+print(f"  Video settings: 320x240 @ 15fps")
+print(f"  Audio settings: 44.1kHz mono")
+print(f"  Supports multiple rooms and users")
+
+server.start()
 ```
 
-### Audio Optimization
+### Client Configuration
 
 ```python
 from kn_sock.video_chat import VideoChatClient
 
-# For voice-only meetings
+# Available client parameters
 client = VideoChatClient(
-    server_ip='192.168.1.10',
-    room='voice-meeting',
-    nickname='user',
-    enable_audio=True,
-    enable_video=False,  # Disable video for voice-only
-    audio_sample_rate=22050,  # Lower sample rate
-    audio_channels=1  # Mono audio
+    server_ip='192.168.1.10',  # Required: Server IP
+    video_port=9000,           # Video stream port
+    audio_port=9001,           # Audio stream port
+    text_port=9002,            # Text chat port
+    room='meeting',            # Room name to join
+    nickname='alice',          # Your display name
+    enable_audio=True          # Enable/disable audio
 )
 
-# For music/audio quality
-client = VideoChatClient(
-    server_ip='192.168.1.10',
-    room='music-room',
-    nickname='user',
-    enable_audio=True,
-    enable_video=True,
-    audio_sample_rate=48000,  # Higher sample rate
-    audio_channels=2  # Stereo audio
-)
+print(f"Connecting to room '{client.room}' as '{client.nickname}'")
+print(f"Audio enabled: {client.enable_audio}")
+
+client.start()
+```
+
+### Multi-Room Setup
+
+```python
+from kn_sock.video_chat import VideoChatServer
+import threading
+
+# Start multiple servers for different rooms
+def start_server_for_room(room_name, port_base):
+    server = VideoChatServer(
+        host='0.0.0.0',
+        video_port=port_base,
+        audio_port=port_base + 1, 
+        text_port=port_base + 2
+    )
+    
+    print(f"Room '{room_name}' starting on ports {port_base}-{port_base+2}")
+    server.start()
+
+# Configure different rooms
+rooms = [
+    ("lobby", 9000),
+    ("meeting1", 9100), 
+    ("meeting2", 9200)
+]
+
+for room_name, port_base in rooms:
+    thread = threading.Thread(
+        target=start_server_for_room,
+        args=(room_name, port_base),
+        daemon=True
+    )
+    thread.start()
 ```
 
 ## Error Handling
@@ -341,38 +403,43 @@ def resilient_video_chat():
 resilient_video_chat()
 ```
 
-### Audio/Video Issues
+### Server/Client Connection Issues
 
 ```python
 from kn_sock.video_chat import VideoChatClient
+import socket
 
-# Test audio and video separately
-def test_media():
+# Test connection to server
+def test_connection():
     try:
-        client = VideoChatClient(
-            server_ip='192.168.1.10',
-            room='test',
-            nickname='tester',
-            enable_audio=True,
-            enable_video=True
-        )
+        # Test if server is reachable
+        test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        test_sock.settimeout(5)
+        result = test_sock.connect_ex(('192.168.1.10', 9000))
+        test_sock.close()
         
-        # Test video
-        if client.test_video():
-            print("✓ Video working")
+        if result == 0:
+            print("✓ Server is reachable")
+            
+            # Try to connect client
+            client = VideoChatClient(
+                server_ip='192.168.1.10',
+                room='test',
+                nickname='tester',
+                enable_audio=True
+            )
+            print("✓ Client configured successfully")
+            # Note: client.start() would begin streaming
+            
         else:
-            print("✗ Video not working")
-        
-        # Test audio
-        if client.test_audio():
-            print("✓ Audio working")
-        else:
-            print("✗ Audio not working")
+            print("✗ Cannot reach server on port 9000")
+            print("  - Check if server is running")
+            print("  - Verify firewall settings")
             
     except Exception as e:
-        print(f"Media test failed: {e}")
+        print(f"Connection test failed: {e}")
 
-test_media()
+test_connection()
 ```
 
 ## Troubleshooting

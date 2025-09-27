@@ -108,9 +108,21 @@ def arp_scan(
     if verbose:
         logger.info(f"Starting ARP scan on {network_range}")
     
-    # Validate network range
+    # Validate network range format (CIDR notation)
     try:
-        scapy.IP(network_range)
+        # Simple validation for CIDR format
+        if '/' not in network_range:
+            raise ValueError("Network range must be in CIDR format (e.g., 192.168.1.0/24)")
+        ip_part, mask_part = network_range.split('/')
+        
+        # Validate IP part using socket
+        import socket
+        socket.inet_aton(ip_part)  # Will raise exception if invalid
+        
+        # Validate mask part
+        mask = int(mask_part)
+        if not 0 <= mask <= 32:
+            raise ValueError("Network mask must be between 0 and 32")
     except Exception as e:
         raise ValueError(f"Invalid network range '{network_range}': {e}")
     

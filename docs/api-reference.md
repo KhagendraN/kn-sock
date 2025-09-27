@@ -427,28 +427,99 @@ Start an HTTP server.
 
 #### `start_pubsub_server(port, handler_func=None, host='0.0.0.0', shutdown_event=None)`
 
-Start a pub/sub server.
+Start a TCP pub/sub server for topic-based message distribution.
 
 **Parameters:**
-- `port` (int): Port to bind.
-- `handler_func` (callable, optional): Custom handler.
-- `host` (str): Host to bind (default: '0.0.0.0').
-- `shutdown_event` (threading.Event, optional): For graceful shutdown.
+- `port` (int): Port to bind the server to.
+- `handler_func` (callable, optional): Custom handler for processing messages. Called with `(data, client_sock, server)` where `data` is the parsed JSON message, `client_sock` is the client socket, and `server` is the PubSubServer instance.
+- `host` (str): Host address to bind to (default: '0.0.0.0').
+- `shutdown_event` (threading.Event, optional): Event for graceful shutdown.
 
 **Returns:** None
+
+**Handler Function Signature:**
+```python
+def custom_handler(data, client_sock, server):
+    """
+    Args:
+        data (dict): Parsed JSON message from client
+        client_sock (socket.socket): Client socket connection
+        server (PubSubServer): Server instance
+    """
+    pass
+```
+
+**Example:**
+```python
+from kn_sock import start_pubsub_server
+
+def message_handler(data, client_sock, server):
+    action = data.get("action")
+    if action == "publish":
+        print(f"Message: {data.get('message')}")
+
+start_pubsub_server(8080, message_handler)
+```
 
 ### Client Class
 
 #### `PubSubClient(host, port)`
 
-Pub/sub client class.
+Create a PubSub client for publishing and subscribing to topics.
+
+**Parameters:**
+- `host` (str): Server hostname or IP address.
+- `port` (int): Server port number.
 
 **Methods:**
-- `subscribe(topic)`: Subscribe to a topic.
-- `unsubscribe(topic)`: Unsubscribe from a topic.
-- `publish(topic, message)`: Publish a message to a topic.
-- `recv(timeout=None)`: Receive a message.
-- `close()`: Close the connection.
+
+##### `subscribe(topic: str) -> None`
+Subscribe to a topic to receive messages published to it.
+
+**Parameters:**
+- `topic` (str): Topic name to subscribe to.
+
+##### `unsubscribe(topic: str) -> None`
+Unsubscribe from a topic to stop receiving its messages.
+
+**Parameters:**
+- `topic` (str): Topic name to unsubscribe from.
+
+##### `publish(topic: str, message: str) -> None`
+Publish a message to a topic for distribution to subscribers.
+
+**Parameters:**
+- `topic` (str): Topic name to publish to.
+- `message` (str): Message content to publish.
+
+##### `recv(timeout: float = None) -> Optional[dict]`
+Receive a message from subscribed topics.
+
+**Parameters:**
+- `timeout` (float, optional): Timeout in seconds. None for blocking receive.
+
+**Returns:** Dictionary with 'topic' and 'message' keys, or None if timeout.
+
+##### `close() -> None`
+Close the client connection and cleanup resources.
+
+**Example:**
+```python
+from kn_sock import PubSubClient
+
+# Publisher
+client = PubSubClient("localhost", 8080)
+client.publish("news", "Breaking news!")
+client.close()
+
+# Subscriber
+client = PubSubClient("localhost", 8080)
+client.subscribe("news")
+message = client.recv(timeout=5.0)
+if message:
+    print(f"Received: {message['message']}")
+client.close()
+```
 
 ## RPC Functions
 

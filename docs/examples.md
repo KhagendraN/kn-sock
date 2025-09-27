@@ -363,6 +363,317 @@ def request_file(host, port, filename):
 request_file("localhost", 8443, "document.pdf")
 ```
 
+### Publish/Subscribe Messaging System
+
+This example demonstrates a complete PubSub system with server, publishers, and subscribers.
+
+**PubSub Server:**
+```python
+from kn_sock import start_pubsub_server
+import threading
+
+def message_handler(data, client_sock, server):
+    """Custom handler to log all PubSub activities."""
+    action = data.get("action")
+    topic = data.get("topic", "unknown")
+    
+    if action == "subscribe":
+        print(f"📝 Client subscribed to: {topic}")
+    elif action == "unsubscribe":
+        print(f"📤 Client unsubscribed from: {topic}")
+    elif action == "publish":
+        message = data.get("message", "")
+        print(f"📢 Message on '{topic}': {message}")
+
+# Start PubSub server
+print("🚀 Starting PubSub server on port 8080...")
+start_pubsub_server(
+    port=8080,
+    host='0.0.0.0',
+    handler_func=message_handler
+)
+```
+
+**Publisher Client:**
+```python
+from kn_sock import PubSubClient
+import json
+import time
+
+def publish_news():
+    """Publish news messages to different topics."""
+    try:
+        client = PubSubClient("localhost", 8080)
+        print("✅ Publisher connected!")
+        
+        # Publish different types of news
+        news_items = [
+            ("news/tech", "AI breakthrough: New language model released"),
+            ("news/sports", "Championship finals tonight at 8 PM"),
+            ("alerts/system", "Server maintenance scheduled for midnight"),
+            ("data/sensors", json.dumps({
+                "sensor_id": "temp_01", 
+                "temperature": 23.5, 
+                "unit": "celsius"
+            }))
+        ]
+        
+        for topic, message in news_items:
+            print(f"📤 Publishing to '{topic}': {message}")
+            client.publish(topic, message)
+            time.sleep(0.5)  # Small delay between messages
+            
+    except Exception as e:
+        print(f"❌ Error: {e}")
+    finally:
+        client.close()
+
+if __name__ == "__main__":
+    publish_news()
+```
+
+**Subscriber Client:**
+```python
+from kn_sock import PubSubClient
+import threading
+import time
+import json
+
+def create_subscriber(name, topics):
+    """Create a subscriber for specific topics."""
+    
+    def message_listener(client):
+        """Listen for messages in a separate thread."""
+        while True:
+            try:
+                message = client.recv(timeout=1.0)
+                if message:
+                    topic = message.get("topic")
+                    content = message.get("message")
+                    print(f"[{name}] 📨 Received on '{topic}': {content}")
+                    
+                    # Try to parse JSON data
+                    try:
+                        parsed = json.loads(content)
+                        if isinstance(parsed, dict):
+                            print(f"[{name}] 📊 Data: {parsed}")
+                    except:
+                        pass  # Not JSON, that's fine
+            except Exception as e:
+                print(f"[{name}] ⚠️  Error: {e}")
+                break
+    
+    try:
+        # Connect to server
+        client = PubSubClient("localhost", 8080)
+        print(f"[{name}] ✅ Connected to PubSub server")
+        
+        # Subscribe to topics
+        for topic in topics:
+            client.subscribe(topic)
+            print(f"[{name}] 📡 Subscribed to: {topic}")
+        
+        # Start message listener
+        listener_thread = threading.Thread(
+            target=message_listener, 
+            args=(client,), 
+            daemon=True
+        )
+        listener_thread.start()
+        
+        # Keep subscriber running
+        time.sleep(10)  # Run for 10 seconds in demo
+        
+        # Unsubscribe
+        for topic in topics:
+            client.unsubscribe(topic)
+        
+        client.close()
+        print(f"[{name}] 🔒 Disconnected")
+        
+    except Exception as e:
+        print(f"[{name}] ❌ Error: {e}")
+
+def main():
+    """Run multiple subscribers for demo."""
+    # Create different subscribers for different topic categories
+    news_subscriber = threading.Thread(
+        target=create_subscriber, 
+        args=("NEWS_SUB", ["news/tech", "news/sports"]),
+        daemon=True
+    )
+    
+    system_subscriber = threading.Thread(
+        target=create_subscriber,
+        args=("SYS_SUB", ["alerts/system", "data/sensors"]),
+        daemon=True
+    )
+    
+    # Start subscribers
+    news_subscriber.start()
+    system_subscriber.start()
+    
+    # Wait for them to finish
+    news_subscriber.join()
+    system_subscriber.join()
+
+if __name__ == "__main__":
+    main()
+```
+
+**Complete Working Example:**
+
+For a complete, ready-to-run example, see: [`docs/examples/pubsub_example.py`](pubsub_example.py)
+
+```bash
+# Run the complete example
+python docs/examples/pubsub_example.py
+```
+
+This example includes:
+- PubSub server with custom message handler
+- Multiple publisher and subscriber clients
+- JSON message parsing
+- Proper error handling and cleanup
+- Detailed logging of all activities
+
+### Remote Procedure Call (RPC) System
+
+This example demonstrates a complete RPC system with server and client.
+
+**RPC Server:**
+```python
+from kn_sock import start_rpc_server
+
+class MathService:
+    """Example RPC service with mathematical operations."""
+    
+    def add(self, a, b):
+        return a + b
+    
+    def subtract(self, a, b):
+        return a - b
+    
+    def multiply(self, a, b):
+        return a * b
+    
+    def divide(self, a, b):
+        if b == 0:
+            raise ValueError("Division by zero is not allowed")
+        return a / b
+
+def start_math_rpc_server():
+    """Start a basic RPC server."""
+    
+    # Create service instance
+    math_service = MathService()
+    
+    # Define additional functions
+    def hello(name):
+        return f"Hello, {name}!"
+    
+    def get_server_time():
+        import datetime
+        return datetime.datetime.now().isoformat()
+    
+    # Register all functions in a flat dictionary
+    register_funcs = {
+        # Math service methods
+        'add': math_service.add,
+        'subtract': math_service.subtract,
+        'multiply': math_service.multiply,
+        'divide': math_service.divide,
+        
+        # Standalone functions  
+        'hello': hello,
+        'get_time': get_server_time
+    }
+    
+    print("🚀 Starting RPC Server on localhost:8080")
+    print("📋 Available RPC methods:")
+    for method_name in register_funcs.keys():
+        print(f"  - {method_name}")
+    
+    # Start the RPC server
+    start_rpc_server(
+        port=8080,
+        register_funcs=register_funcs,
+        host='0.0.0.0'
+    )
+
+if __name__ == "__main__":
+    start_math_rpc_server()
+```
+
+**RPC Client:**
+```python
+from kn_sock import RPCClient
+
+def test_rpc_client():
+    """Example RPC client."""
+    
+    client = None
+    try:
+        # Connect to RPC server
+        client = RPCClient('localhost', 8080)
+        print("✅ Connected to RPC server")
+        
+        # Call individual functions
+        greeting = client.call('hello', 'Alice')
+        print(f"Greeting: {greeting}")
+        
+        server_time = client.call('get_time')
+        print(f"Server time: {server_time}")
+        
+        # Call math functions
+        result = client.call('add', 10, 20)
+        print(f"10 + 20 = {result}")
+        
+        result = client.call('multiply', 7, 8)
+        print(f"7 * 8 = {result}")
+        
+        # Handle errors
+        try:
+            result = client.call('divide', 10, 0)
+            print(f"10 / 0 = {result}")
+        except Exception as e:
+            print(f"Division by zero error: {e}")
+        
+        # Call non-existent method
+        try:
+            result = client.call('non_existent_method')
+        except Exception as e:
+            print(f"Method not found error: {e}")
+        
+    except ConnectionRefusedError:
+        print("❌ Could not connect to RPC server. Is it running?")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+    finally:
+        if client is not None:
+            client.close()
+            print("🔒 Client connection closed")
+
+if __name__ == "__main__":
+    test_rpc_client()
+```
+
+**Complete Working Example:**
+
+For a complete, ready-to-run example, see: [`docs/examples/rpc_example.py`](rpc_example.py)
+
+```bash
+# Run the complete example
+python docs/examples/rpc_example.py
+```
+
+This example includes:
+- RPC server with multiple services (math, utility functions)
+- RPC client with comprehensive testing
+- JSON-RPC protocol over TCP
+- Error handling for division by zero and method not found
+- Proper connection management and cleanup
+
 ## Running Examples
 
 ### Prerequisites

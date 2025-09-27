@@ -68,7 +68,18 @@ from .json_socket import (
 )
 from .utils import *
 from .errors import *
-from .live_stream import start_live_stream, connect_to_live_server
+
+# Optional import for live_stream (requires cv2, pyaudio)
+try:
+    from .live_stream import start_live_stream, connect_to_live_server
+except ImportError:
+    # Define placeholder functions that raise informative errors
+    def start_live_stream(*args, **kwargs):
+        raise ImportError("live_stream functionality requires additional dependencies. Install with: pip install opencv-python pyaudio")
+    
+    def connect_to_live_server(*args, **kwargs):
+        raise ImportError("live_stream functionality requires additional dependencies. Install with: pip install opencv-python pyaudio")
+
 from .websocket import (
     start_websocket_server,
     connect_websocket,
@@ -78,7 +89,20 @@ from .websocket import (
 from .http import http_get, http_post, https_get, https_post, start_http_server
 from .pubsub import start_pubsub_server, PubSubClient
 from .rpc import start_rpc_server, RPCClient
-from .video_chat import VideoChatServer, VideoChatClient
+
+# Optional import for video_chat (requires cv2, pyaudio)  
+try:
+    from .video_chat import VideoChatServer, VideoChatClient
+except ImportError:
+    # Define placeholder classes that raise informative errors
+    class VideoChatServer:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("video_chat functionality requires additional dependencies. Install with: pip install opencv-python pyaudio")
+    
+    class VideoChatClient:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("video_chat functionality requires additional dependencies. Install with: pip install opencv-python pyaudio")
+
 from .compression import compress_data, decompress_data, detect_compression
 from .interactive_cli import KnSockInteractiveCLI
 from .network import arp_scan, mac_lookup, monitor_dns

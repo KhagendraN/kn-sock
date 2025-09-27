@@ -32,23 +32,31 @@ For complete dependency information, see the [API Reference](api-reference.md#de
 ```python
 from kn_sock.network import monitor_dns
 
-# Monitor DNS for 60 seconds
-results = monitor_dns(duration=60)
-for result in results:
-    print(f"{result['source_ip']} -> {result['domain']}")
+# Monitor DNS for 30 seconds
+# Note: Requires root privileges (run with sudo)
+try:
+    results = monitor_dns(duration=30)
+    for result in results:
+        print(f"{result['source_ip']} -> {result['domain']}")
+except ImportError:
+    print("scapy required: pip install scapy")
+except PermissionError:
+    print("Root privileges required: sudo python script.py")
 ```
+
+> 📝 **Copy-paste example**: For a complete working example you can copy and run, see [`docs/examples/network_example.py`](../examples/network_example.py)
 
 ### Command Line
 
 ```bash
 # Basic monitoring (requires sudo)
-sudo knsock monitor
+sudo kn-sock monitor
 
 # Monitor for 2 minutes with logging
-sudo knsock monitor --duration 120 --log dns_log.json
+sudo kn-sock monitor --duration 120 --log dns_log.json
 
 # Verbose output
-sudo knsock monitor --duration 60 --verbose
+sudo kn-sock monitor --duration 60 --verbose
 ```
 
 For complete CLI documentation, see the [API Reference](api-reference.md#cli-commands).
@@ -203,7 +211,7 @@ DNS monitoring requires root privileges for packet sniffing:
 
 ```bash
 # Linux/macOS
-sudo knsock monitor --duration 60
+sudo kn-sock monitor --duration 60
 
 # Or in Python
 sudo python -c "from kn_sock.network import monitor_dns; monitor_dns(60)"
@@ -250,34 +258,58 @@ For complete security and legal information, see the [API Reference](api-referen
 
 ## Examples
 
-### Real-time DNS Monitor
+### Real-time DNS Monitor with Error Handling
 
 ```python
 from kn_sock.network import monitor_dns
+from kn_sock.network.monitor import _check_scapy_available, _check_privileges
 
 def real_time_monitor():
-    """Monitor DNS requests in real-time with custom processing."""
+    """Monitor DNS requests in real-time with proper error handling."""
+    
+    # Check prerequisites
+    if not _check_scapy_available():
+        print("❌ Error: scapy not available")
+        print("Install with: pip install scapy")
+        return
+    
+    if not _check_privileges():
+        print("❌ Error: Root privileges required")
+        print("Run with: sudo python script.py")
+        return
+    
     def process_dns(result):
-        # Filter for specific domains
-        if "google.com" in result['domain']:
-            print(f"Google query from {result['source_ip']}: {result['domain']}")
+        """Process each DNS request."""
+        domain = result['domain']
+        source = result['source_ip']
+        qtype = result['query_type']
         
-        # Alert on suspicious domains
-        suspicious = ["malware.com", "phishing.net"]
-        if any(sus in result['domain'] for sus in suspicious):
-            print(f"ALERT: Suspicious domain {result['domain']} from {result['source_ip']}")
+        # Filter for interesting queries
+        if any(keyword in domain for keyword in ["google", "facebook", "youtube"]):
+            print(f"🌐 Popular site: {source} -> {domain} ({qtype})")
+        elif domain.endswith('.local'):
+            print(f"🏠 Local query: {source} -> {domain} ({qtype})")
+        else:
+            print(f"🔍 DNS Query: {source} -> {domain} ({qtype})")
     
     print("Starting real-time DNS monitoring...")
-    print("Press Ctrl+C to stop")
+    print("Make some web requests to see DNS activity")
+    print("Press Ctrl+C to stop\n")
     
     try:
         results = monitor_dns(
             duration=300,  # 5 minutes
             callback=process_dns,
-            verbose=True
+            log_file="dns_monitoring.json",
+            verbose=False  # Disable verbose to reduce noise
         )
+        
+        print(f"\n✅ Monitoring completed. Captured {len(results)} DNS requests.")
+        
     except KeyboardInterrupt:
-        print("\nMonitoring stopped by user")
+        print("\n🛑 Monitoring stopped by user")
+    except Exception as e:
+        print(f"❌ Monitoring failed: {e}")
 
 if __name__ == "__main__":
     real_time_monitor()
@@ -287,17 +319,78 @@ if __name__ == "__main__":
 
 ```python
 import time
-from kn_sock.network import monitor_dns, analyze_dns_logs
+from kn_sock.network import monitor_dns
+from kn_sock.network.monitor import analyze_dns_logs, _check_scapy_available, _check_privileges
 
 def activity_dashboard():
     """Create a simple network activity dashboard."""
-    log_file = "activity_log.json"
+    
+    # Check prerequisites
+    if not _check_scapy_available():
+        print("❌ scapy not available. Install with: pip install scapy")
+        return
+        
+    if not _check_privileges():
+        print("❌ Root privileges required. Run with: sudo python script.py")
+        return
+    
+    log_file = "network_activity.json"
     
     print("Network Activity Dashboard")
-    print("=" * 40)
+    print("=" * 50)
+    print("Monitoring network DNS activity...")
+    print("Browse the web to generate DNS traffic\n")
     
-    # Monitor for 2 minutes
-    print("Monitoring network activity for 2 minutes...")
+    try:
+        # Monitor for 2 minutes
+        results = monitor_dns(
+            duration=120,
+            log_file=log_file,
+            verbose=True
+        )
+        
+        if not results:
+            print("No DNS activity detected.")
+            return
+        
+        # Analyze the results
+        print(f"\n📊 Analysis Results:")
+        print("=" * 30)
+        
+        analysis = analyze_dns_logs(log_file)
+        
+        print(f"📈 Total DNS Requests: {analysis['total_requests']}")
+        print(f"🌐 Unique Domains: {analysis['unique_domains']}")
+        print(f"💻 Unique Sources: {analysis['unique_sources']}")
+        
+        # Show top domains
+        if analysis['top_domains']:
+            print(f"\n🔝 Top Domains:")
+            for i, (domain, count) in enumerate(analysis['top_domains'][:10], 1):
+                print(f"  {i:2d}. {domain:30s} ({count:3d} requests)")
+        
+        # Show query type distribution
+        if analysis['query_type_distribution']:
+            print(f"\n📋 Query Types:")
+            for qtype, count in analysis['query_type_distribution'].items():
+                print(f"  {qtype:6s}: {count:3d} requests")
+        
+        # Show top sources
+        if analysis['top_sources']:
+            print(f"\n💻 Top Source IPs:")
+            for ip, count in analysis['top_sources'][:5]:
+                print(f"  {ip:15s}: {count:3d} requests")
+                
+        print(f"\n💾 Full log saved to: {log_file}")
+        
+    except KeyboardInterrupt:
+        print("\n🛑 Monitoring stopped by user")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    activity_dashboard()
+```
     results = monitor_dns(duration=120, log_file=log_file)
     
     # Analyze results

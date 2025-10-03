@@ -34,6 +34,7 @@ configure_logging()
 # Only import and expose public API symbols that are actually used. Remove unused imports and fix E402 errors by placing imports at the top.
 from .tcp import (
     send_tcp_message,
+    send_tcp_bytes,
     start_tcp_server,
     start_threaded_tcp_server,
     start_async_tcp_server,
@@ -82,6 +83,7 @@ except ImportError:
 
 from .websocket import (
     start_websocket_server,
+    start_async_websocket_server,
     connect_websocket,
     async_connect_websocket,
     AsyncWebSocketConnection,
@@ -104,5 +106,6 @@ except ImportError:
             raise ImportError("video_chat functionality requires additional dependencies. Install with: pip install opencv-python pyaudio")
 
 from .compression import compress_data, decompress_data, detect_compression
+from .decorators import log_exceptions, retry, measure_time, ensure_json_input
 from .interactive_cli import KnSockInteractiveCLI
 from .network import arp_scan, mac_lookup, monitor_dns

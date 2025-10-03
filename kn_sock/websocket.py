@@ -3,7 +3,7 @@ import threading
 import base64
 import hashlib
 import struct
-from typing import Callable, Optional, Dict
+from typing import Callable, Optional, Dict, Awaitable
 import asyncio
 
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -253,3 +253,71 @@ async def async_connect_websocket(
     if b"101" not in resp.split(b"\r\n", 1)[0]:
         raise ConnectionError("WebSocket handshake failed")
     return AsyncWebSocketConnection(reader, writer)
+
+
+async def start_async_websocket_server(
+    port: int,
+    handler: Callable[[dict, tuple, asyncio.StreamWriter], Awaitable[None]],
+    host: str = "localhost"
+):
+    """
+    Start an asynchronous WebSocket server.
+    Args:
+        port (int): Port to bind.
+        handler (callable): Async function to handle (data, addr, writer).
+        host (str): Host to bind.
+    """
+    async def handle_client(reader, writer):
+        addr = writer.get_extra_info('peername')
+        try:
+            # Simple WebSocket handshake for async server
+            request = await reader.readuntil(b'\r\n\r\n')
+            if b'Upgrade: websocket' in request:
+                # Extract Sec-WebSocket-Key
+                lines = request.decode().split('\r\n')
+                key = None
+                for line in lines:
+                    if line.startswith('Sec-WebSocket-Key:'):
+                        key = line.split(':', 1)[1].strip()
+                        break
+                
+                if key:
+                    # Generate response key
+                    accept = base64.b64encode(
+                        hashlib.sha1((key + GUID).encode()).digest()
+                    ).decode()
+                    
+                    response = (
+                        "HTTP/1.1 101 Switching Protocols\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: Upgrade\r\n"
+                        f"Sec-WebSocket-Accept: {accept}\r\n\r\n"
+                    )
+                    writer.write(response.encode())
+                    await writer.drain()
+                    
+                    # Create async WebSocket connection and handle messages
+                    ws_conn = AsyncWebSocketConnection(reader, writer)
+                    while True:
+                        try:
+                            message = await ws_conn.recv()
+                            if message:
+                                # Convert message to dict format for consistency
+                                data = {"message": message, "type": "text"}
+                                await handler(data, addr, writer)
+                            else:
+                                break
+                        except Exception as e:
+                            print(f"Error handling WebSocket message: {e}")
+                            break
+        except Exception as e:
+            print(f"WebSocket handshake error: {e}")
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    server = await asyncio.start_server(handle_client, host, port)
+    print(f"[WebSocket][ASYNC] Server listening on {host}:{port}")
+    
+    async with server:
+        await server.serve_forever()

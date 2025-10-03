@@ -105,7 +105,7 @@ nav:
     - Secure TCP (SSL/TLS): protocols/secure-tcp.md
   - Advanced Features:
     - Pub/Sub Messaging: advanced/pubsub.md
-    - Remote Procedure Calls: advanced/rpc.md
+    - Remote Procedure Calls: advanced/rpc.md  
     - Live Streaming: advanced/live-streaming.md
     - Video Chat: advanced/video-chat.md
     - HTTP/HTTPS: advanced/http.md
@@ -113,12 +113,19 @@ nav:
     - ARP Scanning: network/arp.md
     - MAC Address Lookup: network/maclookup.md
     - DNS Monitoring: network/monitor.md
+  - Utilities:
+    - Error Handling: utilities/error-handling.md
+    - Compression: compression.md
+    - Load Balancing: utilities/load-balancing.md
+    - Message Queues: utilities/message-queues.md
+    - Protocol Buffers: utilities/protobuf.md
+    - Network Utilities: utilities/utilities.md
   - Reference & Guides:
     - API Reference: api-reference.md
+    - Decorators: decorators.md
     - CLI Guide: cli.md
     - Examples: examples.md
     - Troubleshooting: troubleshooting.md
-
 extra_css:
   - stylesheets/extra.css
 

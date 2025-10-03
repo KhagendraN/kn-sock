@@ -4,6 +4,375 @@ This page showcases real-world examples and complete applications built with kn-
 
 ## Basic Examples
 
+### Auto-Detect Network and Scan
+
+```python
+from kn_sock.network import arp_scan
+from kn_sock.network.arp import get_local_network_info
+
+def smart_network_scan():
+    """Automatically detect and scan local network."""
+    # Get local network information
+    info = get_local_network_info()
+    print(f"Local IP: {info['local_ip']}")
+    print(f"Interface: {info['interface']}")
+    print(f"Gateway: {info['gateway']}")
+    
+    # Auto-generate network range
+    local_ip = info['local_ip']
+    if local_ip != "Unknown" and '.' in local_ip:
+        ip_parts = local_ip.split('.')
+        network_range = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+        
+        print(f"\nScanning network: {network_range}")
+        devices = arp_scan(network_range, verbose=True)
+        
+        if devices:
+            print(f"\n✅ Found {len(devices)} devices:")
+            print("-" * 50)
+            for i, device in enumerate(devices, 1):
+                print(f"{i:2d}. IP: {device['ip']:15s} MAC: {device['mac']}")
+        else:
+            print("No devices found on this network.")
+    else:
+        print("Could not auto-detect network. Please specify manually.")
+
+if __name__ == "__main__":
+    smart_network_scan()
+```
+
+### Simple Network Inventory
+
+```python
+from kn_sock.network import arp_scan
+
+def network_inventory(network_range="192.168.1.0/24"):
+    """Create a simple network inventory."""
+    try:
+        devices = arp_scan(network_range, verbose=True)
+        
+        print(f"Network Inventory - Found {len(devices)} devices:")
+        print("-" * 50)
+        
+        for i, device in enumerate(devices, 1):
+            print(f"{i:2d}. IP: {device['ip']:15s} MAC: {device['mac']}")
+            
+    except RuntimeError as e:
+        if "Operation not permitted" in str(e):
+            print("❌ ARP scan requires root privileges. Run with sudo:")
+            print("sudo python your_script.py")
+        else:
+            print(f"❌ Scan failed: {e}")
+
+if __name__ == "__main__":
+    network_inventory()
+```
+
+### Continuous Network Monitoring
+
+```python
+import time
+from kn_sock.network import arp_scan
+from kn_sock.network.arp import get_local_network_info
+
+def monitor_network():
+    """Monitor network for device changes."""
+    # Auto-detect network range
+    info = get_local_network_info()
+    local_ip = info['local_ip']
+    
+    if local_ip == "Unknown":
+        print("❌ Could not detect local network. Please specify manually.")
+        return
+    
+    ip_parts = local_ip.split('.')
+    network_range = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+    
+    print(f"Monitoring network: {network_range}")
+    print("Press Ctrl+C to stop monitoring\n")
+    
+    known_devices = set()
+    scan_count = 0
+    
+    try:
+        while True:
+            scan_count += 1
+            print(f"[Scan #{scan_count}] Checking network...")
+            
+            try:
+                current_devices = arp_scan(network_range)
+                current_ips = {device['ip'] for device in current_devices}
+                
+                # Find new devices
+                new_devices = current_ips - known_devices
+                if new_devices:
+                    print(f"🔍 New devices detected: {new_devices}")
+                
+                # Find disconnected devices
+                disconnected = known_devices - current_ips
+                if disconnected:
+                    print(f"📤 Devices disconnected: {disconnected}")
+                
+                known_devices = current_ips
+                print(f"✅ Currently active: {len(current_ips)} devices")
+                
+            except Exception as e:
+                print(f"❌ Scan failed: {e}")
+            
+            time.sleep(30)  # Check every 30 seconds
+            
+    except KeyboardInterrupt:
+        print(f"\nMonitoring stopped after {scan_count} scans.")
+
+if __name__ == "__main__":
+    monitor_network()
+```
+
+### Integration with MAC Lookup
+
+```python
+from kn_sock.network import arp_scan, mac_lookup
+from kn_sock.network.arp import get_local_network_info
+
+def detailed_network_scan():
+    """Scan network and identify device vendors."""
+    # Auto-detect network
+    info = get_local_network_info()
+    local_ip = info['local_ip']
+    
+    if local_ip == "Unknown":
+        network_range = "192.168.1.0/24"  # Fallback
+        print(f"Using fallback network range: {network_range}")
+    else:
+        ip_parts = local_ip.split('.')
+        network_range = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+        print(f"Scanning detected network: {network_range}")
+    
+    try:
+        devices = arp_scan(network_range)
+        
+        if not devices:
+            print("No devices found on network.")
+            return
+            
+        print(f"\nDetailed Network Analysis - {len(devices)} devices found:")
+        print("=" * 70)
+        
+        for i, device in enumerate(devices, 1):
+            print(f"\n[Device #{i}]")
+            print(f"IP Address: {device['ip']}")
+            print(f"MAC Address: {device['mac']}")
+            
+            # Lookup vendor information
+            try:
+                vendor_info = mac_lookup(device['mac'], use_api=False)  # Use offline first
+                print(f"Vendor: {vendor_info['vendor']}")
+                print(f"OUI: {vendor_info['oui']}")
+            except Exception as e:
+                print(f"Vendor lookup failed: {e}")
+            
+            print("-" * 40)
+            
+    except Exception as e:
+        if "Operation not permitted" in str(e):
+            print("❌ Root privileges required. Run with: sudo python script.py")
+        else:
+            print(f"❌ Scan failed: {e}")
+
+if __name__ == "__main__":
+    detailed_network_scan()
+```
+
+### Network Device Inventory
+
+```python
+from kn_sock.network import arp_scan, mac_lookup
+from kn_sock.network.arp import get_local_network_info
+
+def device_inventory():
+    """Create detailed device inventory with vendor information."""
+    # Auto-detect network or use fallback
+    info = get_local_network_info()
+    local_ip = info['local_ip']
+    
+    if local_ip != "Unknown" and '.' in local_ip:
+        ip_parts = local_ip.split('.')
+        network_range = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+    else:
+        network_range = "192.168.1.0/24"  # Fallback
+        
+    print(f"Scanning network: {network_range}")
+    
+    try:
+        # Scan network for devices
+        devices = arp_scan(network_range)
+        
+        if not devices:
+            print("No devices found on network.")
+            return
+            
+        print("\nNetwork Device Inventory")
+        print("=" * 60)
+        
+        for i, device in enumerate(devices, 1):
+            # Lookup vendor information
+            try:
+                vendor_info = mac_lookup(device['mac'], use_api=False)
+                print(f"\n[Device #{i}]")
+                print(f"IP Address: {device['ip']}")
+                print(f"MAC Address: {device['mac']}")
+                print(f"Vendor: {vendor_info['vendor']}")
+                print(f"OUI: {vendor_info['oui']}")
+                print("-" * 40)
+            except Exception as e:
+                print(f"Vendor lookup failed for {device['mac']}: {e}")
+                
+    except Exception as e:
+        if "Operation not permitted" in str(e):
+            print("❌ Root privileges required. Run with: sudo python script.py")
+        else:
+            print(f"❌ Network scan failed: {e}")
+
+if __name__ == "__main__":
+    device_inventory()
+```
+
+### Virtual Machine Detection
+
+```python
+from kn_sock.network import arp_scan, mac_lookup
+from kn_sock.network.arp import get_local_network_info
+
+def detect_virtual_machines():
+    """Identify virtual machines on the network."""
+    # Auto-detect network
+    info = get_local_network_info()
+    local_ip = info['local_ip']
+    
+    if local_ip != "Unknown" and '.' in local_ip:
+        ip_parts = local_ip.split('.')
+        network_range = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.0/24"
+    else:
+        network_range = "192.168.1.0/24"
+        
+    vm_keywords = ["vmware", "virtualbox", "qemu", "microsoft", "xen", "oracle"]
+    
+    try:
+        devices = arp_scan(network_range)
+        
+        if not devices:
+            print("No devices found on network.")
+            return
+            
+        print("Virtual Machine Detection")
+        print("=" * 40)
+        
+        vms_found = 0
+        for device in devices:
+            try:
+                vendor_info = mac_lookup(device['mac'], use_api=False)
+                vendor_lower = vendor_info['vendor'].lower()
+                
+                is_vm = any(keyword in vendor_lower for keyword in vm_keywords)
+                
+                if is_vm:
+                    print(f"🖥️  VM Detected: {device['ip']} ({vendor_info['vendor']})")
+                    vms_found += 1
+                else:
+                    print(f"💻 Physical Device: {device['ip']} ({vendor_info['vendor']})")
+                    
+            except Exception as e:
+                print(f"❌ Could not analyze {device['ip']}: {e}")
+        
+        print(f"\nSummary: Found {vms_found} virtual machines out of {len(devices)} devices.")
+        
+    except Exception as e:
+        if "Operation not permitted" in str(e):
+            print("❌ Root privileges required. Run with: sudo python script.py")
+        else:
+            print(f"❌ Scan failed: {e}")
+
+if __name__ == "__main__":
+    detect_virtual_machines()
+```
+
+### MAC Address Validation Tool
+
+```python
+from kn_sock.network.mac_lookup import validate_mac, mac_lookup
+
+def validate_and_lookup():
+    """Validate MAC addresses and lookup vendor information."""
+    test_macs = [
+        "00:1A:2B:3C:4D:5E",     # Valid colon format
+        "00-50-56-C0-00-08",     # Valid hyphen format  
+        "001A2B3C4D5E",          # Valid compact format
+        "00:50:56:c0:00:08",     # Valid mixed case
+        "00:1A:2B:3C:4D",        # Invalid - too short
+        "invalid-mac-address"     # Invalid format
+    ]
+    
+    print("MAC Address Validation and Lookup")
+    print("=" * 50)
+    
+    for mac in test_macs:
+        print(f"\nTesting: {mac}")
+        
+        if validate_mac(mac):
+            try:
+                result = mac_lookup(mac, use_api=False)
+                print(f"  ✅ Status: Valid")
+                print(f"  🏢 Vendor: {result['vendor']}")
+                print(f"  🔖 OUI: {result['oui']}")
+                print(f"  📍 Normalized: {result['mac']}")
+            except Exception as e:
+                print(f"  ✅ Status: Valid format")
+                print(f"  ❌ Lookup failed: {e}")
+        else:
+            print(f"  ❌ Status: Invalid MAC address format")
+        
+        print("-" * 30)
+
+if __name__ == "__main__":
+    validate_and_lookup()
+```
+
+### Batch Processing with Error Handling
+
+```python
+from kn_sock.network.mac_lookup import batch_mac_lookup
+
+def batch_lookup_with_errors():
+    """Process multiple MAC addresses with error handling."""
+    macs = [
+        "00:1A:2B:3C:4D:5E",  # Valid
+        "08:00:27:12:34:56",  # Valid
+        "invalid-mac",        # Invalid
+        "52:54:00:AB:CD:EF"   # Valid
+    ]
+    
+    results = batch_mac_lookup(macs, use_api=False)
+    
+    print("Batch MAC Lookup Results")
+    print("=" * 50)
+    
+    for i, result in enumerate(results):
+        mac = macs[i]
+        print(f"MAC: {mac}")
+        
+        if "Error" in result['vendor']:
+            print(f"  Status: Error - {result['vendor']}")
+        else:
+            print(f"  Status: Success")
+            print(f"  Vendor: {result['vendor']}")
+            print(f"  OUI: {result['oui']}")
+        
+        print("-" * 30)
+
+if __name__ == "__main__":
+    batch_lookup_with_errors()
+```
+
 ### Echo Server and Client
 
 **Server:**

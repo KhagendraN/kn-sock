@@ -689,29 +689,98 @@ Check if a string is valid JSON.
 
 ## Decorators
 
-### `log_exceptions(raise_error=False)`
+kn-sock provides utility decorators for enhanced error handling, performance monitoring, retry logic, and data validation. For detailed examples and usage patterns, see [Decorators Guide](decorators.md).
 
-Logs exceptions and optionally re-raises them.
+### `@log_exceptions(raise_error=True)`
 
-**Parameters:**
-- `raise_error` (bool): Whether to re-raise the exception.
-
-### `retry(retries=3, delay=1.0, exceptions=(Exception,))`
-
-Retries a function upon failure.
+Automatically logs exceptions that occur in decorated functions, with optional re-raising.
 
 **Parameters:**
-- `retries` (int): Number of retry attempts.
-- `delay` (float): Delay between attempts in seconds.
-- `exceptions` (tuple): Exception types to catch.
+- `raise_error` (bool, default: True): Whether to re-raise the exception after logging.
 
-### `measure_time`
+**Returns:** Decorator function
 
-Measures and prints the execution time of the wrapped function.
+**Example:**
+```python
+from kn_sock.decorators import log_exceptions
 
-### `ensure_json_input`
+@log_exceptions(raise_error=False)
+def tolerant_handler(data, addr, socket):
+    # Exceptions are logged but don't crash the server
+    pass
+```
 
-Validates that the first argument is a valid JSON object.
+### `@retry(retries=3, delay=1.0, exceptions=(Exception,))`
+
+Automatically retries functions that fail, with configurable retry count, delay, and exception types.
+
+**Parameters:**
+- `retries` (int, default: 3): Maximum number of retry attempts.
+- `delay` (float, default: 1.0): Delay in seconds between retries.
+- `exceptions` (tuple, default: (Exception,)): Tuple of exception types to catch and retry.
+
+**Returns:** Decorator function
+
+**Example:**
+```python
+from kn_sock.decorators import retry
+
+@retry(retries=5, delay=2.0, exceptions=(ConnectionError, TimeoutError))
+def network_operation():
+    # Retries up to 5 times on network errors
+    pass
+```
+
+### `@measure_time`
+
+Measures and logs the execution time of decorated functions using the standard Python logging system.
+
+**Parameters:** None
+
+**Returns:** Decorator function
+
+**Example:**
+```python
+from kn_sock.decorators import measure_time
+
+@measure_time
+def process_data(data):
+    # Logs: "[TIMER] process_data executed in 1.2345 seconds"
+    return expensive_computation(data)
+```
+
+### `@ensure_json_input`
+
+Validates that the first argument to a function is valid JSON data (dict or JSON string). Automatically converts JSON strings to dictionaries.
+
+**Parameters:** None
+
+**Returns:** Decorator function
+
+**Raises:**
+- `InvalidJSONError`: If input is not valid JSON
+
+**Example:**
+```python
+from kn_sock.decorators import ensure_json_input
+
+@ensure_json_input
+def handle_json_message(data, addr, socket):
+    # data is guaranteed to be a dict at this point
+    message_type = data.get('type')
+    # Process the message...
+```
+
+**Stacking Decorators:**
+```python
+@log_exceptions(raise_error=False)
+@retry(retries=2, delay=0.5)
+@measure_time
+@ensure_json_input
+def robust_handler(data, addr, socket):
+    # Fully decorated handler with all features
+    pass
+```
 
 ## Errors
 

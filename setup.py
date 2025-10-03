@@ -10,7 +10,7 @@ with open(os.path.join(this_dir, "docs", "index.md"), encoding="utf-8") as f:
 
 setup(
     name="kn-sock",
-    version="v0.3.1b1",
+    version="v0.3.0",
     packages=find_packages(),
     entry_points={
         "console_scripts": [
@@ -20,7 +20,7 @@ setup(
     install_requires=["opencv-python", "numpy", "pyaudio", "ffmpeg-python"],
     author="Khagendra Neupane",
     author_email="nkhagendra1@gmail.com",
-    description="A simplified socket programming toolkit for Python",
+    description="Modern Python networking library with comprehensive protocol support and developer-friendly APIs",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/KhagendraN/kn-sock",
